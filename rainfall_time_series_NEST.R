@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 11/05/2015
+#DATE MODIFIED: 11/09/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -42,9 +42,9 @@ library(lubridate)              # date and time handling tools
 
 ###### Functions used in this script sourced from other files
 
-#function_spatial_regression_analyses <- "SPatial_analysis_spatial_reg_05172015_functions.R" #PARAM 1
-#script_path <- "/home/parmentier/Data/Space_beats_time/sbt_scripts" #path to script #PARAM 2
-#source(file.path(script_path,function_spatial_regression_analyses)) #source all functions used in this script 1.
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functions.R" #PARAM 1
+script_path <- "/home/bparmentier/~/Google Drive/NEST/R_NEST" #path to script #PARAM 2
+source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
 
 ##### Functions used in this script 
 
@@ -68,74 +68,13 @@ load_obj <- function(f){
   env[[nm]]
 }
 
-format_s <-function(s_ID){
-  #Format station ID in a vector format/tuple that is used in a psql query.
-  # Argument 1: vector of station ID
-  # Return: character of station ID
-  tx2<-s_ID
-  tx2<-as.character(tx2)
-  stat_list<-tx2
-  temp<-shQuote(stat_list)
-  t<-paste(temp, collapse= " ")
-  t1<-gsub(" ", ",",t)
-  sf_ID<-paste("(",t1,")",sep="") #vector containing the station ID to query
-  return(sf_ID)
-}
-
-download_files_with_pattern_ftp<-function(url_dir,out_path,file_pattern){
-  #sadfd
-  #adsfd
-  #library(RCurl) #modify later using require
-  # FTP 
-  url<-url_dir
-  filenames = getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE) 
-  file_pattern_rx<-glob2rx(file_pattern)
-  # Deal with newlines as \n or \r\n. (BDR) 
-  # Or alternatively, instruct libcurl to change \n's to \r\n's for us with crlf = TRUE 
-  # filenames = getURL(url, ftp.use.epsv = FALSE, ftplistonly = TRUE, crlf = TRUE) 
-  
-  filenames = paste(url, strsplit(filenames, "\r*\n")[[1]], sep = "") 
-  filenames_all<-filenames
-  #Now subset filenames to match wanted files...
-  i_file<-grep(file_pattern_rx,filenames_all,value=TRUE) # using grep with "value" extracts the matching names
-  pos<-match(i_file,filenames_all)
-  
-  filenames<-filenames_all[pos]53)})) 
-  for(i in 1:length(filenames)){
-    d
-    out_file<-basename(filenames[i])
-    out_file_path<-file.path(out_path,out_file)
-    download.file(filenames[i],destfile=out_file_path)
-    #creating the file names
-  }
-}
-
-##### STEP 1: Select station in the study area
-
-filename<-sub(".shp","",infile1)             #Removing the extension from file.
-interp_area <- readOGR(".",filename)
-CRS_interp<-proj4string(interp_area)         #Storing the coordinate information: geographic coordinates longlat WGS84
-
-#Read in GHCND database station locations
-dat_stat <- read.fwf(infile2, 
-                     widths = c(11,9,10,7,3,31,4,4,6),fill=TRUE)
-colnames(dat_stat)<-c("STAT_ID","lat","lon","elev","state","name","GSNF","HCNF","WMOID")
-coords<- dat_stat[,c('lon','lat')]
-coordinates(dat_stat)<-coords
-proj4string(dat_stat)<-CRS_locs_WGS84 #this is the WGS84 projection
-#proj4string(dat_stat)<-CRS_interp
-dat_stat2<-spTransform(dat_stat,CRS(CRS_interp))         # Project from WGS84 to new coord. system
-
-# Spatial query to find relevant stations
-inside <- !is.na(over(dat_stat2, as(interp_area, "SpatialPolygons")))  #Finding stations contained in the current interpolation area
-stat_reg<-dat_stat2[inside,]              #Selecting stations contained in the current interpolation area
 
 #####  Parameters and argument set up ###########
 
 in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS
 
-proj_modis_str <-"+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs" #CONST 1
+#proj_modis_str <-"+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs" #CONST 1
 #CRS_interp <-"+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
 proj_str<- CRS_WGS84 
@@ -149,6 +88,7 @@ create_out_dir_param=TRUE #PARAM9
 num_cores <- 11 #PARAM 14
 
 rainfall_dir <- "prism_rain"
+station_data_fname <- file.path(in_dir, "WQ_TECS_Q.xlsx")
 
 ################# START SCRIPT ###############################
 
@@ -170,4 +110,82 @@ r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=file.path(in_dir,r
 #### Make this a function...that will run automatically the predictions
 
 plot(r_rainfall,y=1)
+data <-read.xls(station_data_fname, sheet=1) #this is T-mode using cor matrix
 
+idx <- seq(as.Date('2014-01-01'), as.Date('2014-12-31'), 'day')
+date_l <- strptime(idx[1], "%Y%m%d") # interpolation date being processed
+dates_l <- format(idx, "%Y%m%d") # interpolation date being processed
+
+## Plot mosaics for Maine for daily predictions in 2014
+
+res_pix <- 480
+
+col_mfrow <- 2
+row_mfrow <- 1
+
+#  png(filename=paste("Figure10_clim_world_mosaics_day_","_",date_proc,"_",tile_size,"_",out_suffix,".png",sep=""),
+#    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+png(filename=paste("Figure1_","time_series_step_in_raster_mosaics",dates_l[11],"_",out_suffix,".png",sep=""),
+    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+
+plot(r1)
+plot(summary_metrics_v,add=T)
+text(summary_metrics_v,summary_metrics_v$tile_id,cex=1.4)
+
+dev.off()
+
+## Get pixel time series at centroids of tiles used in the predictions
+
+df_ts_pixel <- extract(r_stack,summary_metrics_v,df=T,sp=F)
+
+df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
+
+#make a function later on?
+
+#inputs
+list_selected_pix <- c("tile_4","tile_6","tile_8","tile_11","tile_14","tile_3","tile_5","tile_7","tile_38","tile_12")
+list_pix <- vector("list",length=length(list_selected_pix))
+#idx <- seq(as.Date('2010-01-01'), as.Date('2010-12-31'), 'day')
+#df_ts_pix
+
+#Select one pix to profile/plot
+
+df_ts_pix <- subset(df_ts_pixel,pred_mod=="mod1")
+
+for(i in 1:length(list_selected_pix)){
+  
+  selected_pix <- list_selected_pix[i]
+  data_pixel <- subset(df_ts_pix,tile_id==selected_pix)
+  pix <- t(data_pixel[1,24:388])
+  d_z <- zoo(pix,idx) #make a time series ...
+  list_pix[[i]] <- pix
+  
+  res_pix <- 480
+  
+  col_mfrow <- 2
+  row_mfrow <- 1
+  
+  #  png(filename=paste("Figure10_clim_world_mosaics_day_","_",date_proc,"_",tile_size,"_",out_suffix,".png",sep=""),
+  #    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+  png(filename=paste("Figure2_","pixel_profile_",selected_pix,"_",out_suffix,".png",sep=""),
+      width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+  
+  
+  plot(d_z,type="b")
+  title(paste("Pixel time series",selected_pix,sep=" "))
+  
+  dev.off()
+}
+
+data_dz <- do.call(cbind,list_pix)
+colnames(data_dz) <- list_selected_pix
+data_dz <- zoo(data_dz,idx)
+
+list_selected_pix <- c("tile_4","tile_6","tile_8","tile_11","tile_14","tile_3","tile_5","tile_7","tile_38","tile_12")
+df_ts_pix2 <- subset(df_ts_pix,tile_id%in% list_selected_pix)
+
+pix_data <- t(df_ts_pix2[,24:388])
+
+#d_z2 <- zoo(pix_data,idx)
+#names(d_z2)<-
+  
