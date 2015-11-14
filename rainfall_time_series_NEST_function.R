@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 11/09/2015
+#DATE MODIFIED: 11/14/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -87,5 +87,55 @@ download_files_with_pattern_ftp<-function(url_dir,out_path,file_pattern){
     #creating the file names
   }
 }
+
+plot_to_file <- function(raster_name,res_pix=480,out_suffix=NULL,out_dir=NULL){
+  #Quick utility function to plot raster to png file for the workflow
+  #This is useful to visually check the outputs from the workflow.
+  #INPUT arguments:
+  #raster_name: input raster object or file name of the raster object
+  #out_suffix: output suffix
+  #out_dir: output directory
+  #OUTPUT:
+  # png_file: name of the file containing the figure/plot
+  #
+  # Authors: Benoit Parmentier
+  # Created: 11/01/2015
+  # Modified: 11/02/2015
+  # To Do: 
+  # - Add option to choose plot format e.g. jpeg, tif etc.
+  #
+  ################################
+  ## Create raster object if not already present
+  if(class(raster_name)!="RasterLayer"){
+    layer_rast<-raster(raster_name)
+  }else{
+    layer_rast <- raster_name
+    raster_name <- filename(layer_rast)
+  }
+  
+  if(is.null(out_suffix)){
+    out_suffix <- ""
+  }
+  if(is.null(out_dir)){
+    out_dir <- getwd()
+  }
+  
+  #Extract name
+  extension_str <- extension(raster_name)
+  raster_name_tmp <- gsub(extension_str,"",basename(raster_name))
+  
+  res_pix <- 480
+  col_mfrow <- 1
+  row_mfrow <- 1
+  #Might change file format later...
+  png_file <- file.path(out_dir,paste("figure_",raster_name_tmp,"_",out_suffix,".png",sep="")) #may be changed later to other format
+  png(filename=png_file,
+      width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+  plot(layer_rast)
+  title(raster_name_tmp)
+  dev.off()
+  return(png_file)
+}
+
 
 ########################### End of script #####################################
