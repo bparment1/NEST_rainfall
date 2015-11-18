@@ -5,15 +5,17 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 11/09/2015
+#DATE MODIFIED: 11/14/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
 #
-#COMMENTS: - 
-#         - 
+#COMMENTS: - The script does not use bacteria data at the current time.  
+#          - Add spacetime object functions for later
 #TO DO:
-#
+# - Select 2 inches rainfall events and correlates with bacteria data
+# - Compute accumulated rain over several days using time series functions
+# - Make a movie sequence later on using animation package in R
 #
 #################################################################################################
 
@@ -43,7 +45,8 @@ library(lubridate)              # date and time handling tools
 ###### Functions used in this script sourced from other files
 
 function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functions.R" #PARAM 1
-script_path <- "/home/bparmentier/~/Google Drive/NEST/R_NEST" #path to script #PARAM 2
+#script_path <- "/home/bparmentier/~/Google Drive/NEST/R_NEST" #path to script #PARAM 2
+script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
 
 ##### Functions used in this script 
@@ -71,8 +74,8 @@ load_obj <- function(f){
 
 #####  Parameters and argument set up ###########
 
-in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50
-#in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS
+#in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50
+in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS
 
 #proj_modis_str <-"+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs" #CONST 1
 #CRS_interp <-"+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84
@@ -88,7 +91,8 @@ create_out_dir_param=TRUE #PARAM9
 num_cores <- 11 #PARAM 14
 
 rainfall_dir <- "prism_rain"
-station_data_fname <- file.path(in_dir, "WQ_TECS_Q.xlsx")
+station_data_fname <- file.path(in_dir, "WQ_TECS_Q.txt")
+#PROJECT_NAME	DMR_TRIP_IDENTIFIER	TRIP_START_DATE	TRIP_COMMENTS	COLLECTOR_INITIALS	EFFORT_START_TIME	LOCATION_ID	LATITUDE_DECIMAL	LONGITUDE_DECIMAL	LOCATION_NAME	LOCATION_DESCRIPTION	LOCATION_TYPE	DIRECTIONS	GROWING_AREA	OPEN_CLOSED_FLAG	WIND_DIRECTION	TIDE_STAGE	CURRENT_CLASSIFICATION_CODE	CATEGORY	DMR_CATCH_IDENTIFIER	SAMPLE_METHOD	TEMP_C	STRATEGY	ADVERSITY	FLOOD	DMR_SAMPLE_IDENTIFIER	LAB	INITIATED_BY	INITIATED_DATE	EXAM_DATE_TIME	SALINITY_PCT	COL_METHOD	COL_SCORE	RAW_COL_SCORE	DELIVERY_TEMP_C
 
 ################# START SCRIPT ###############################
 
@@ -110,53 +114,80 @@ r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=file.path(in_dir,r
 #### Make this a function...that will run automatically the predictions
 
 plot(r_rainfall,y=1)
-data <-read.xls(station_data_fname, sheet=1) #this is T-mode using cor matrix
+data <- read.table(station_data_fname,sep=",",header=T) #this is T-mode using cor matrix
+
+dat_stat <- subset(data, !is.na(LONGITUDE_DECIMAL) & !is.na(LATITUDE_DECIMAL))
+coords <- dat_stat[,c('LONGITUDE_DECIMAL','LATITUDE_DECIMAL')]
+coordinates(dat_stat) <- coords
+proj4string(dat_stat) <- CRS_WGS84 #this is the WGS84 projection
+
+## No spatial duplicates
+dat_stat <- remove.duplicates(dat_stat)
+
+## No duplicates in attributes
+#dat_stat[which(!duplicated(dat_stat$id)), ]
+
+## Combination
+#pts[which(!duplicated(as.data.frame(pts))), ]
 
 idx <- seq(as.Date('2014-01-01'), as.Date('2014-12-31'), 'day')
 date_l <- strptime(idx[1], "%Y%m%d") # interpolation date being processed
 dates_l <- format(idx, "%Y%m%d") # interpolation date being processed
 
+r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
+
+#x <- zApply(r_rainfall, by=as.yearqtr, fun=mean, name="quarters") #aggregate times series by quarter
+#names(SISmm) <- month.abb
+#x <- zApply(r_rainfall, by=as.yearmon, fun=mean, name="month") #aggregate time series by month
+#x <- zApplyr_rainfall, by="month",fun=mean,name="month") #overall montlhy mean mean
+
+x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean
+raster_name <- paste("day","_","overall_mean",file_format,sep="")
+writeRaster(x, file=raster_name,overwrite=T)
+plot_to_file(raster_name) #quick plot of raster to disk
+
+#x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
+r_date<-getZ(r_rainfall)
+#x <- apply.daily(ndvi_ts,FUN=mean) does not work
+#plot(x)
+
 ## Plot mosaics for Maine for daily predictions in 2014
+## Get pixel time series at centroids of tiles used in the predictions
+
+df_ts_pixel <- extract(r_rainfall,dat_stat,df=T,sp=F)
+#df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
+  
+#d_z <- zoo(df_ts_pixel,idx) #make a time series .
 
 res_pix <- 480
 
 col_mfrow <- 2
 row_mfrow <- 1
 
-#  png(filename=paste("Figure10_clim_world_mosaics_day_","_",date_proc,"_",tile_size,"_",out_suffix,".png",sep=""),
-#    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-png(filename=paste("Figure1_","time_series_step_in_raster_mosaics",dates_l[11],"_",out_suffix,".png",sep=""),
+png(filename=paste("Figure1_","time_series_step_in_raster_mosaics",dates_l[1],"_",out_suffix,".png",sep=""),
     width=col_mfrow*res_pix,height=row_mfrow*res_pix)
 
-plot(r1)
-plot(summary_metrics_v,add=T)
-text(summary_metrics_v,summary_metrics_v$tile_id,cex=1.4)
+plot(r_rainfall,y=1)
+plot(dat_stat,add=T)
+text(dat_stat,dat_stat$tID,cex=1.4)
 
 dev.off()
 
-## Get pixel time series at centroids of tiles used in the predictions
-
-df_ts_pixel <- extract(r_stack,summary_metrics_v,df=T,sp=F)
-
-df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
-
 #make a function later on?
 
-#inputs
-list_selected_pix <- c("tile_4","tile_6","tile_8","tile_11","tile_14","tile_3","tile_5","tile_7","tile_38","tile_12")
+#list_selected_pix
+
+#df_ts_pix <- subset(df_ts_pixel,)
+df_ts_pix <- df_ts_pixel
+list_selected_pix <- 1:2
 list_pix <- vector("list",length=length(list_selected_pix))
-#idx <- seq(as.Date('2010-01-01'), as.Date('2010-12-31'), 'day')
-#df_ts_pix
-
-#Select one pix to profile/plot
-
-df_ts_pix <- subset(df_ts_pixel,pred_mod=="mod1")
-
 for(i in 1:length(list_selected_pix)){
   
   selected_pix <- list_selected_pix[i]
-  data_pixel <- subset(df_ts_pix,tile_id==selected_pix)
-  pix <- t(data_pixel[1,24:388])
+  data_pixel <- subset(df_ts_pix,ID==selected_pix)
+  #pix <- t(data_pixel[1,24:388])#can subset to range later
+  pix <- t(data_pixel)#can subset to range later
+  
   d_z <- zoo(pix,idx) #make a time series ...
   list_pix[[i]] <- pix
   
@@ -181,11 +212,7 @@ data_dz <- do.call(cbind,list_pix)
 colnames(data_dz) <- list_selected_pix
 data_dz <- zoo(data_dz,idx)
 
-list_selected_pix <- c("tile_4","tile_6","tile_8","tile_11","tile_14","tile_3","tile_5","tile_7","tile_38","tile_12")
-df_ts_pix2 <- subset(df_ts_pix,tile_id%in% list_selected_pix)
+## IDENTIFY 2 inches events?
 
-pix_data <- t(df_ts_pix2[,24:388])
 
-#d_z2 <- zoo(pix_data,idx)
-#names(d_z2)<-
-  
+############################ END OF SCRIPT #######################
