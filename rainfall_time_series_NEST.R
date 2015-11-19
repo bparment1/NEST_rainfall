@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 11/14/2015
+#DATE MODIFIED: 11/19/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -44,9 +44,9 @@ library(lubridate)              # date and time handling tools
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functions.R" #PARAM 1
-#script_path <- "/home/bparmentier/~/Google Drive/NEST/R_NEST" #path to script #PARAM 2
-script_path <- "/home/parmentier/Data/rainfall/NEST"
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_11192015.R" #PARAM 1
+script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 2
+#script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
 
 ##### Functions used in this script 
@@ -74,11 +74,10 @@ load_obj <- function(f){
 
 #####  Parameters and argument set up ###########
 
-#in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50
-in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS
+in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50
+#in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS
 
-#proj_modis_str <-"+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6371007.181 +b=6371007.181 +units=m +no_defs" #CONST 1
-#CRS_interp <-"+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84
+CRS_interp <-"+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
 proj_str<- CRS_WGS84 
 CRS_reg <- CRS_WGS84 # PARAM 4
@@ -86,13 +85,18 @@ CRS_reg <- CRS_WGS84 # PARAM 4
 file_format <- ".rst" #PARAM5
 NA_value <- -9999 #PARAM6
 NA_flag_val <- NA_value #PARAM7
-out_suffix <-"NEST_prism_11052015" #output suffix for the files and ouptu folder #PARAM 8
+out_suffix <-"NEST_prism_11192015" #output suffix for the files and ouptu folder #PARAM 8
 create_out_dir_param=TRUE #PARAM9
 num_cores <- 11 #PARAM 14
 
 rainfall_dir <- "prism_rain"
 station_data_fname <- file.path(in_dir, "WQ_TECS_Q.txt")
-#PROJECT_NAME	DMR_TRIP_IDENTIFIER	TRIP_START_DATE	TRIP_COMMENTS	COLLECTOR_INITIALS	EFFORT_START_TIME	LOCATION_ID	LATITUDE_DECIMAL	LONGITUDE_DECIMAL	LOCATION_NAME	LOCATION_DESCRIPTION	LOCATION_TYPE	DIRECTIONS	GROWING_AREA	OPEN_CLOSED_FLAG	WIND_DIRECTION	TIDE_STAGE	CURRENT_CLASSIFICATION_CODE	CATEGORY	DMR_CATCH_IDENTIFIER	SAMPLE_METHOD	TEMP_C	STRATEGY	ADVERSITY	FLOOD	DMR_SAMPLE_IDENTIFIER	LAB	INITIATED_BY	INITIATED_DATE	EXAM_DATE_TIME	SALINITY_PCT	COL_METHOD	COL_SCORE	RAW_COL_SCORE	DELIVERY_TEMP_C
+
+#start_date <- "2014-01-01"
+#end_date <- "2014-12-31"
+
+start_date <- "2010-01-01"
+end_date <- "2010-12-31"
 
 ################# START SCRIPT ###############################
 
@@ -116,23 +120,28 @@ r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=file.path(in_dir,r
 plot(r_rainfall,y=1)
 data <- read.table(station_data_fname,sep=",",header=T) #this is T-mode using cor matrix
 
-dat_stat <- subset(data, !is.na(LONGITUDE_DECIMAL) & !is.na(LATITUDE_DECIMAL))
+dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
+data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
+data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
+data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
+data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
+
+idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
+#date_l <- strptime(idx[1], "%Y%m%d") # 
+dates_l <- format(idx, "%Y%m%d") #  date being processed
+
+data_subset <- data[data$ >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
+data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
+
+dat_stat <- subset(data_subset, !is.na(LONGITUDE_DECIMAL) & !is.na(LATITUDE_DECIMAL))
 coords <- dat_stat[,c('LONGITUDE_DECIMAL','LATITUDE_DECIMAL')]
 coordinates(dat_stat) <- coords
-proj4string(dat_stat) <- CRS_WGS84 #this is the WGS84 projection
+proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
 
-## No spatial duplicates
+## Remove duplicates rows from stations to identify uniques sations
 dat_stat <- remove.duplicates(dat_stat)
-
-## No duplicates in attributes
-#dat_stat[which(!duplicated(dat_stat$id)), ]
-
-## Combination
-#pts[which(!duplicated(as.data.frame(pts))), ]
-
-idx <- seq(as.Date('2014-01-01'), as.Date('2014-12-31'), 'day')
-date_l <- strptime(idx[1], "%Y%m%d") # interpolation date being processed
-dates_l <- format(idx, "%Y%m%d") # interpolation date being processed
+#dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
+nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
 
 r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
 
@@ -147,16 +156,16 @@ writeRaster(x, file=raster_name,overwrite=T)
 plot_to_file(raster_name) #quick plot of raster to disk
 
 #x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
-r_date<-getZ(r_rainfall)
+r_date <- getZ(r_rainfall)
 #x <- apply.daily(ndvi_ts,FUN=mean) does not work
 #plot(x)
 
 ## Plot mosaics for Maine for daily predictions in 2014
 ## Get pixel time series at centroids of tiles used in the predictions
 
-df_ts_pixel <- extract(r_rainfall,dat_stat,df=T,sp=F)
+df_ts_pixel <- extract(r_rainfall,dat_stat,df=T,sp=T)
 #df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
-  
+r_ts_name <- names(r_rainfall)
 #d_z <- zoo(df_ts_pixel,idx) #make a time series .
 
 res_pix <- 480
@@ -175,21 +184,38 @@ dev.off()
 
 #make a function later on?
 
-#list_selected_pix
+#ADD selection function by ID
+#list_selected_pix: by LOCATION ID
+#
 
 #df_ts_pix <- subset(df_ts_pixel,)
 df_ts_pix <- df_ts_pixel
-list_selected_pix <- 1:2
+list_selected_pix <- 11
 list_pix <- vector("list",length=length(list_selected_pix))
+var_name <- "COL_SCORE"
+var_ID <- "LOCATION_ID"
+
+data_subset[,c(var_ID,var_name)]
+threshold <- 
 for(i in 1:length(list_selected_pix)){
   
   selected_pix <- list_selected_pix[i]
-  data_pixel <- subset(df_ts_pix,ID==selected_pix)
+  data_pixel <- df_ts_pix[selected_pix,]
+  id_name <- data_pixel[[var_ID]]
+  id_selected <- data_subset[[var_ID]]==id_name
+  var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
+  var_pix_ts <- t(as.data.frame(subset(data_pixel,select=var_name)))
   #pix <- t(data_pixel[1,24:388])#can subset to range later
-  pix <- t(data_pixel)#can subset to range later
+  pix_ts <- t(as.data.frame(subset(data_pixel,select=r_ts_name))) #can subset to range later
   
-  d_z <- zoo(pix,idx) #make a time series ...
-  list_pix[[i]] <- pix
+  d_z <- zoo(pix_ts,idx) #make a time series ...
+  names(d_z)<- "rainfall"
+  d_var <- zoo(var_pix,var_pix$TRIP_START_DATE_f)
+  
+  d_z2 <- merge(d_z,d_var)
+  d_z2$TRIP_START_DATE_f <- NULL
+  
+  list_pix[[i]] <- pix_ts
   
   res_pix <- 480
   
@@ -201,11 +227,15 @@ for(i in 1:length(list_selected_pix)){
   png(filename=paste("Figure2_","pixel_profile_",selected_pix,"_",out_suffix,".png",sep=""),
       width=col_mfrow*res_pix,height=row_mfrow*res_pix)
   
-  
-  plot(d_z,type="b")
-  title(paste("Pixel time series",selected_pix,sep=" "))
+  plot(d_z2,type="b",main="")
+  title(paste("Pixel time series",id_name,sep=" "))
   
   dev.off()
+  
+  ###
+  #Figure 2
+  plot(d_z,lty=2)
+  points(d_z2$COL_SCORE,col="red",pch=3,cex=1.5)
 }
 
 data_dz <- do.call(cbind,list_pix)
