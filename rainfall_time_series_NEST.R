@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 11/19/2015
+#DATE MODIFIED: 11/21/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -94,9 +94,10 @@ station_data_fname <- file.path(in_dir, "WQ_TECS_Q.txt")
 
 #start_date <- "2014-01-01"
 #end_date <- "2014-12-31"
-
 start_date <- "2010-01-01"
 end_date <- "2010-12-31"
+var_name <- "COL_SCORE"
+var_ID <- "LOCATION_ID"
 
 ################# START SCRIPT ###############################
 
@@ -130,7 +131,7 @@ idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
 #date_l <- strptime(idx[1], "%Y%m%d") # 
 dates_l <- format(idx, "%Y%m%d") #  date being processed
 
-data_subset <- data[data$ >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
+data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
 data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
 
 dat_stat <- subset(data_subset, !is.na(LONGITUDE_DECIMAL) & !is.na(LATITUDE_DECIMAL))
@@ -146,7 +147,6 @@ nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a un
 r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
 
 #x <- zApply(r_rainfall, by=as.yearqtr, fun=mean, name="quarters") #aggregate times series by quarter
-#names(SISmm) <- month.abb
 #x <- zApply(r_rainfall, by=as.yearmon, fun=mean, name="month") #aggregate time series by month
 #x <- zApplyr_rainfall, by="month",fun=mean,name="month") #overall montlhy mean mean
 
@@ -169,7 +169,6 @@ r_ts_name <- names(r_rainfall)
 #d_z <- zoo(df_ts_pixel,idx) #make a time series .
 
 res_pix <- 480
-
 col_mfrow <- 2
 row_mfrow <- 1
 
@@ -187,22 +186,32 @@ dev.off()
 #ADD selection function by ID
 #list_selected_pix: by LOCATION ID
 #
+plot(table(data_subset$LOCATION_ID),type="h")
+freq_station <- sort(table(data_subset$LOCATION_ID),decreasing=T) # select top 2 stations in term of availability
+list_selected_ID <- names(freq_station)[1:2]
 
+#selected_pix <- list_selected_pix[i]
+#data_pixel <- df_ts_pix[selected_pix,]
+##id_name <- data_pixel[[var_ID]]
+#id_selected <- data_subset[[var_ID]]==list_selected_ID
+#test <- data_subset[data_subset$LOCATION_ID %in% list_selected_ID,]
 #df_ts_pix <- subset(df_ts_pixel,)
-df_ts_pix <- df_ts_pixel
-list_selected_pix <- 11
-list_pix <- vector("list",length=length(list_selected_pix))
-var_name <- "COL_SCORE"
-var_ID <- "LOCATION_ID"
 
-data_subset[,c(var_ID,var_name)]
-threshold <- 
-for(i in 1:length(list_selected_pix)){
+##This will be a function later on...
+df_ts_pix <- df_ts_pixel
+#list_selected_pix <- 11:14
+list_pix <- vector("list",length=length(list_selected_ID))
+#threshold <- 
+
+for(i in 1:length(list_selected_ID)){
   
-  selected_pix <- list_selected_pix[i]
-  data_pixel <- df_ts_pix[selected_pix,]
-  id_name <- data_pixel[[var_ID]]
-  id_selected <- data_subset[[var_ID]]==id_name
+  id_name <- list_selected_ID[i]
+
+  #id_selected <- data_subset[[var_ID]]==id_name
+  id_selected <- df_ts_pix[[var_ID]]==id_name
+  #df_ts_pix[id_selected,]
+  data_pixel <- df_ts_pix[id_selected,]
+  #id_name <- data_pixel[[var_ID]]
   var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
   var_pix_ts <- t(as.data.frame(subset(data_pixel,select=var_name)))
   #pix <- t(data_pixel[1,24:388])#can subset to range later
@@ -224,22 +233,36 @@ for(i in 1:length(list_selected_pix)){
   
   #  png(filename=paste("Figure10_clim_world_mosaics_day_","_",date_proc,"_",tile_size,"_",out_suffix,".png",sep=""),
   #    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-  png(filename=paste("Figure2_","pixel_profile_",selected_pix,"_",out_suffix,".png",sep=""),
+  png(filename=paste("Figure2a_","pixel_profile_",id_name,"_",out_suffix,".png",sep=""),
       width=col_mfrow*res_pix,height=row_mfrow*res_pix)
   
-  plot(d_z2,type="b",main="")
+  plot(d_z2,type="b",main="",pch=10)
   title(paste("Pixel time series",id_name,sep=" "))
   
   dev.off()
   
   ###
-  #Figure 2
-  plot(d_z,lty=2)
-  points(d_z2$COL_SCORE,col="red",pch=3,cex=1.5)
+  #Figure 2b
+  png(filename=paste("Figure2b_","pixel_profile_var_combined_",id_name,"_",out_suffix,".png",sep=""),
+      width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+  
+  plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
+  points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
+  title(paste("Pixel time series",id_name,sep=" "))
+  
+  dev.off()
+  
+  ## Now correlation.
+  
+  ## Cumulated precip and lag?
+  
+  ## Threshold?
+  
+  
 }
 
 data_dz <- do.call(cbind,list_pix)
-colnames(data_dz) <- list_selected_pix
+colnames(data_dz) <- list_selected_ID
 data_dz <- zoo(data_dz,idx)
 
 ## IDENTIFY 2 inches events?
