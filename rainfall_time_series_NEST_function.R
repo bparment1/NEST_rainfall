@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 11/14/2015
+#DATE MODIFIED: 11/19/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -137,5 +137,32 @@ plot_to_file <- function(raster_name,res_pix=480,out_suffix=NULL,out_dir=NULL){
   return(png_file)
 }
 
+#This function creates a spatial polygon data frame object for the extent matching a raster input
+create_polygon_from_extent<-function(reg_ref_rast,outDir=NULL,outSuffix=NULL){
+  #This functions returns polygon sp from input rast
+  #Input Arguments: 
+  #reg_ref_rast: input ref rast or spatial object (polygons, points df)
+  #outDir : output directory, if NULL then the current dir in used
+  #outSuffix: output suffix used for the naming of the shapefile
+  #Output: 
+  #reg_outline_poly: spatial polygon data.frame
+  #
+  if(is.null(outDir)){
+    outDir=getwd()
+  }
+  if(is.null(outSuffix)){
+    outSuffix=""
+  }
+  
+  ref_e <- extent(reg_ref_rast) #extract extent from raster object/SpatialPointsDataframe/SpatialPolygonsDataframe
+  reg_outline_poly <- as(ref_e, "SpatialPolygons") #coerce raster extent object to SpatialPolygons from sp package 
+  reg_outline_poly <- as(reg_outline_poly, "SpatialPolygonsDataFrame") #promote to spdf
+  proj4string(reg_outline_poly) <- projection(reg_ref_rast) #Assign projection to spdf
+  infile_reg_outline <- paste("reg_out_line_",out_suffix,".shp",sep="") #name of newly crated shapefile with the extent
+  writeOGR(reg_outline_poly,dsn= outDir,layer= sub(".shp","",infile_reg_outline), 
+           driver="ESRI Shapefile",overwrite_layer="TRUE")
+  
+  return(reg_outline_poly) #return spdf
+}
 
 ########################### End of script #####################################
