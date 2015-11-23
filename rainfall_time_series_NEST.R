@@ -128,8 +128,8 @@ data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
 data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
 
 if (convert_to_inches==TRUE){
-  #convert_mm_to_inch_f <- function(r_s){r_s/25.4}
-  r_rainfall <- r_rainfall/25.4 #improve efficiency later?
+
+  r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
 }
 
 idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
@@ -151,10 +151,6 @@ nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a un
 
 r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
 
-#x <- zApply(r_rainfall, by=as.yearqtr, fun=mean, name="quarters") #aggregate times series by quarter
-#x <- zApply(r_rainfall, by=as.yearmon, fun=mean, name="month") #aggregate time series by month
-#x <- zApplyr_rainfall, by="month",fun=mean,name="month") #overall montlhy mean mean
-
 x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean
 raster_name <- paste("day","_","overall_mean",file_format,sep="")
 writeRaster(x, file=raster_name,overwrite=T)
@@ -162,8 +158,6 @@ plot_to_file(raster_name) #quick plot of raster to disk
 
 #x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
 r_date <- getZ(r_rainfall)
-#x <- apply.daily(ndvi_ts,FUN=mean) does not work
-#plot(x)
 
 ## Plot mosaics for Maine for daily predictions in 2014
 ## Get pixel time series at centroids of tiles used in the predictions
@@ -174,7 +168,7 @@ r_ts_name <- names(r_rainfall)
 #d_z <- zoo(df_ts_pixel,idx) #make a time series .
 
 res_pix <- 480
-col_mfrow <- 2
+col_mfrow <- 1
 row_mfrow <- 1
 
 png(filename=paste("Figure1_","histogram","_station_coliform_measurements_frequency_",year_processed,"_",out_suffix,".png",sep=""),
@@ -188,7 +182,7 @@ dev.off()
 ref_pol <- create_polygon_from_extent(dat_stat,outDir=out_dir,outSuffix=out_suffix)
   
 res_pix <- 480
-col_mfrow <- 2
+col_mfrow <- 1.5
 row_mfrow <- 1
 
 png(filename=paste("Figure2a_","rainfall_map_",dates_l[1],"_and_stations_",out_suffix,".png",sep=""),
@@ -198,6 +192,8 @@ plot(r_rainfall,y=1)
 plot(dat_stat,add=T)
 text(dat_stat,dat_stat$tID,cex=1.4)
 plot(ref_pol,border="red",add=T)
+legend("topright",legend=c("stations"), 
+       cex=1.2, col="black",pch =3,bty="n")
 
 dev.off()
 
@@ -208,9 +204,10 @@ png(filename=paste("Figure2b_","rainfall_map_",dates_l[1],"_and_stations_zoom_wi
     width=col_mfrow*res_pix,height=row_mfrow*res_pix)
 
 plot(r_rainfall,y=1,ext=extent(dat_stat))
-plot(dat_stat,add=T)
+plot(dat_stat,add=T,pch=3)
 text(dat_stat,dat_stat$tID,cex=1.4)
-#legend()
+legend("topright",legend=c("stations"), 
+       cex=1.2, col="black",pch =3,bty="n")
 
 dev.off()
 
@@ -272,9 +269,9 @@ for(i in 1:length(list_selected_ID)){
 
   list_pix[[i]] <- pix_ts
   
-  #res_pix <- 480
-  #col_mfrow <- 2
-  #row_mfrow <- 1
+  res_pix <- 480
+  col_mfrow <- 2
+  row_mfrow <- 1
 
   #png(filename=paste("Figure3a_","pixel_profile_",id_name,"_",out_suffix,".png",sep=""),
   #    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
@@ -297,9 +294,33 @@ for(i in 1:length(list_selected_ID)){
   plot(df2$COL_SCORE,pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
   abline(h=threshold_val,col="green")
   #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
-  
-  #axis(4,xlab="",ylab="elevation(m)")  
+  legend("topleft",legend=c("stations"), 
+         cex=1.2,col="red",pch =10,bty="n")
+
   axis(4,cex=1.2)
+  mtext(4, text = "coliform scores", line = 3)
+  
+  title(paste("Station time series",id_name,sep=" "))
+  
+  dev.off()
+  
+  #Figure 3c
+  png(filename=paste("Figure3c_","pixel_profile_var_combined_log_scale_",id_name,"_",out_suffix,".png",sep=""),
+      width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+  
+  #plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
+  #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
+  plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
+  par(new=TRUE)              # key: ask for new plot without erasing old
+  #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
+  plot(log(df2$COL_SCORE),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
+  abline(h=threshold_val,col="green")
+  #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
+  legend("topleft",legend=c("stations"), 
+         cex=1.2,col="red",pch =10,bty="n")
+  
+  axis(4,cex=1.2)
+  mtext(4, text = "coliform scores", line = 3)
   
   title(paste("Station time series",id_name,sep=" "))
   
@@ -311,13 +332,14 @@ for(i in 1:length(list_selected_ID)){
   col_mfrow <- 2
   row_mfrow <- 1
   
-  png(filename=paste("Figure4_","histogram_coliform_measurements_",year,"_",id_name,"_",out_suffix,".png",sep=""),
+  png(filename=paste("Figure4_","histogram_coliform_measurements_",year_processed,"_",id_name,"_",out_suffix,".png",sep=""),
       width=col_mfrow*res_pix,height=row_mfrow*res_pix)
   
   hist_val <- hist(df2$COL_SCORE,main="",xlab="COLIFORM SCORES")
   title(paste("Histrogram of coliform scores for station",id_name,"in",year_processed,sep=" "))
   abline(v=threshold_val,col="green" )
-  
+  legend("topright",legend=c("treshold val"), 
+         cex=1.2, col="green",lty =1,bty="n")  
   
   y_loc <- max(hist_val$counts)/2
   
