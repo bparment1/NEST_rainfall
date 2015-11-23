@@ -1,11 +1,11 @@
-####################################  NEST Beach closure project  #######################################
-###########################################  Figures production  #######################################
+##############################################  NEST Beach closure project  #######################################
+###########################################  Figures and Analyses production  #######################################
 #This script explores the correlation between rainfall events and beach closures due to bacteria outbreaks in Maine.
 #The script uses time series analyes from R. 
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 11/21/2015
+#DATE MODIFIED: 11/23/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -44,7 +44,7 @@ library(lubridate)              # date and time handling tools
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_11192015.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_11232015.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 2
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
@@ -74,30 +74,30 @@ load_obj <- function(f){
 
 #####  Parameters and argument set up ###########
 
-in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50
-#in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS
+in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
+#in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
 
-CRS_interp <-"+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
-proj_str<- CRS_WGS84 
-CRS_reg <- CRS_WGS84 # PARAM 4
+proj_str<- CRS_WGS84 #param 2
+CRS_reg <- CRS_WGS84 # PARAM 3
 
-file_format <- ".rst" #PARAM5
-NA_value <- -9999 #PARAM6
-NA_flag_val <- NA_value #PARAM7
-out_suffix <-"NEST_prism_11192015" #output suffix for the files and ouptu folder #PARAM 8
-create_out_dir_param=TRUE #PARAM9
-num_cores <- 11 #PARAM 14
+file_format <- ".rst" #PARAM 4
+NA_value <- -9999 #PARAM5
+NA_flag_val <- NA_value #PARAM6
+out_suffix <-"NEST_prism_11232015" #output suffix for the files and ouptu folder #PARAM 7
+create_out_dir_param=TRUE #PARAM8
+num_cores <- 11 #PARAM 9
 
-rainfall_dir <- "prism_rain"
-station_data_fname <- file.path(in_dir, "WQ_TECS_Q.txt")
+rainfall_dir <- "prism_rain/prismrain2012" #PARAM 10
+station_data_fname <- file.path(in_dir, "WQ_TECS_Q.txt") #PARAM 11
 
-#start_date <- "2014-01-01"
-#end_date <- "2014-12-31"
-start_date <- "2010-01-01"
-end_date <- "2010-12-31"
-var_name <- "COL_SCORE"
-var_ID <- "LOCATION_ID"
+start_date <- "2012-01-01" #PARAM 12
+end_date <- "2012-12-31" #PARAM 13
+var_name <- "COL_SCORE" #PARAM 14
+var_ID <- "LOCATION_ID" #PARAM 15
+year_processed <- "2012" #PARAM 16
+threshold_val <- 2 #PARAM 17
+convert_to_inches <- TRUE #PARAM 18
 
 ################# START SCRIPT ###############################
 
@@ -126,6 +126,11 @@ data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
 data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
 data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
 data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
+
+if (convert_to_inches==TRUE){
+  #convert_mm_to_inch_f <- function(r_s){r_s/25.4}
+  r_rainfall <- r_rainfall/25.4 #improve efficiency later?
+}
 
 idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
 #date_l <- strptime(idx[1], "%Y%m%d") # 
@@ -172,30 +177,52 @@ res_pix <- 480
 col_mfrow <- 2
 row_mfrow <- 1
 
-png(filename=paste("Figure1_","time_series_step_in_raster_mosaics",dates_l[1],"_",out_suffix,".png",sep=""),
+png(filename=paste("Figure1_","histogram","_station_coliform_measurements_frequency_",year_processed,"_",out_suffix,".png",sep=""),
+    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+
+plot(table(data_subset$LOCATION_ID),type="h", main="Number of measurements",
+     ylab="Frequency of coliform measurements",xlab="Station ID")
+
+dev.off()
+
+ref_pol <- create_polygon_from_extent(dat_stat,outDir=out_dir,outSuffix=out_suffix)
+  
+res_pix <- 480
+col_mfrow <- 2
+row_mfrow <- 1
+
+png(filename=paste("Figure2a_","rainfall_map_",dates_l[1],"_and_stations_",out_suffix,".png",sep=""),
     width=col_mfrow*res_pix,height=row_mfrow*res_pix)
 
 plot(r_rainfall,y=1)
 plot(dat_stat,add=T)
 text(dat_stat,dat_stat$tID,cex=1.4)
+plot(ref_pol,border="red",add=T)
 
 dev.off()
 
+col_mfrow <- 2
+row_mfrow <- 1
+
+png(filename=paste("Figure2b_","rainfall_map_",dates_l[1],"_and_stations_zoom_window_",out_suffix,".png",sep=""),
+    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+
+plot(r_rainfall,y=1,ext=extent(dat_stat))
+plot(dat_stat,add=T)
+text(dat_stat,dat_stat$tID,cex=1.4)
+#legend()
+
+dev.off()
+
+#
 #make a function later on?
 
 #ADD selection function by ID
 #list_selected_pix: by LOCATION ID
 #
-plot(table(data_subset$LOCATION_ID),type="h")
+
 freq_station <- sort(table(data_subset$LOCATION_ID),decreasing=T) # select top 2 stations in term of availability
 list_selected_ID <- names(freq_station)[1:2]
-
-#selected_pix <- list_selected_pix[i]
-#data_pixel <- df_ts_pix[selected_pix,]
-##id_name <- data_pixel[[var_ID]]
-#id_selected <- data_subset[[var_ID]]==list_selected_ID
-#test <- data_subset[data_subset$LOCATION_ID %in% list_selected_ID,]
-#df_ts_pix <- subset(df_ts_pixel,)
 
 ##This will be a function later on...
 df_ts_pix <- df_ts_pixel
@@ -210,54 +237,100 @@ for(i in 1:length(list_selected_ID)){
   #id_selected <- data_subset[[var_ID]]==id_name
   id_selected <- df_ts_pix[[var_ID]]==id_name
   #df_ts_pix[id_selected,]
+  
+  ### Not get the data from the time series
+  
   data_pixel <- df_ts_pix[id_selected,]
-  #id_name <- data_pixel[[var_ID]]
-  var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
   var_pix_ts <- t(as.data.frame(subset(data_pixel,select=var_name)))
   #pix <- t(data_pixel[1,24:388])#can subset to range later
   pix_ts <- t(as.data.frame(subset(data_pixel,select=r_ts_name))) #can subset to range later
   
+  ## Process the coliform data
+  
+  #there are several measurements per day for some stations !!!
+  #id_name <- data_pixel[[var_ID]]
+  
+  df_tmp  <-data_subset[data_subset$LOCATION_ID==id_name,]
+  #aggregate(df_tmp
+  var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean)
+  #length(unique(test$TRIP_START_DATE_f))
+  
+  #var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
+  
   d_z <- zoo(pix_ts,idx) #make a time series ...
   names(d_z)<- "rainfall"
   d_var <- zoo(var_pix,var_pix$TRIP_START_DATE_f)
+  #plot(d_var,pch=10)
   
   d_z2 <- merge(d_z,d_var)
   d_z2$TRIP_START_DATE_f <- NULL
   
+  df2 <- as.data.frame(d_z2)
+  df2$COL_SCORE <- as.numeric(as.character(df2$COL_SCORE))
+  #plot(df2$rainfall)
+  
+
   list_pix[[i]] <- pix_ts
   
-  res_pix <- 480
+  #res_pix <- 480
+  #col_mfrow <- 2
+  #row_mfrow <- 1
+
+  #png(filename=paste("Figure3a_","pixel_profile_",id_name,"_",out_suffix,".png",sep=""),
+  #    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
   
+  #plot(d_z2,type="b",main="",pch=10)
+  #title(paste("Pixel time series",id_name,sep=" "))
+  
+  #dev.off()
+  
+  ###
+  #Figure 3b
+  png(filename=paste("Figure3b_","pixel_profile_var_combined_",id_name,"_",out_suffix,".png",sep=""),
+      width=col_mfrow*res_pix,height=row_mfrow*res_pix)
+  
+  #plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
+  #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
+  plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
+  par(new=TRUE)              # key: ask for new plot without erasing old
+  #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
+  plot(df2$COL_SCORE,pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
+  abline(h=threshold_val,col="green")
+  #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
+  
+  #axis(4,xlab="",ylab="elevation(m)")  
+  axis(4,cex=1.2)
+  
+  title(paste("Station time series",id_name,sep=" "))
+  
+  dev.off()
+  
+  ####Histogram of values
+  
+  res_pix <- 480
   col_mfrow <- 2
   row_mfrow <- 1
   
-  #  png(filename=paste("Figure10_clim_world_mosaics_day_","_",date_proc,"_",tile_size,"_",out_suffix,".png",sep=""),
-  #    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-  png(filename=paste("Figure2a_","pixel_profile_",id_name,"_",out_suffix,".png",sep=""),
+  png(filename=paste("Figure4_","histogram_coliform_measurements_",year,"_",id_name,"_",out_suffix,".png",sep=""),
       width=col_mfrow*res_pix,height=row_mfrow*res_pix)
   
-  plot(d_z2,type="b",main="",pch=10)
-  title(paste("Pixel time series",id_name,sep=" "))
+  hist_val <- hist(df2$COL_SCORE,main="",xlab="COLIFORM SCORES")
+  title(paste("Histrogram of coliform scores for station",id_name,"in",year_processed,sep=" "))
+  abline(v=threshold_val,col="green" )
+  
+  
+  y_loc <- max(hist_val$counts)/2
+  
+  #text(threshold_val,y_loc,paste(as.character(threshold_val)),pos=1,offset=0.1)
   
   dev.off()
   
-  ###
-  #Figure 2b
-  png(filename=paste("Figure2b_","pixel_profile_var_combined_",id_name,"_",out_suffix,".png",sep=""),
-      width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-  
-  plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
-  points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
-  title(paste("Pixel time series",id_name,sep=" "))
-  
-  dev.off()
   
   ## Now correlation.
   
   ## Cumulated precip and lag?
   
   ## Threshold?
-  
   
 }
 
