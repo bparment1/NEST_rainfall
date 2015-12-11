@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 12/08/2015
+#DATE MODIFIED: 12/11s/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -245,10 +245,22 @@ df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
 list_pix <- vector("list",length=length(list_selected_ID))
 #threshold <- 
 
-
-plotting_coliform_and_rainfall <- function(i,df_ts_pix,list_selected_ID,plot_fig=T){
+debug(plotting_coliform_and_rainfall)
+i <- 1
+test <- plotting_coliform_and_rainfall(i,df_ts_pix,data_var,list_selected_ID,plot_fig=T)
   
-#for(i in 1:length(list_selected_ID)){
+plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID,plot_fig=T){
+  
+  # Input arguments:
+  # i : selected station
+  # df_ts_pix_data : data extracted from raster layer
+  # data_var : data with coliform measurement
+  # list_selected_ID : list of selected station
+  # plot_fig : if T, figures are plotted11111
+  # Output
+  #
+  
+  ##### START FUNCTION ############
   
   #get the relevant station
   id_name <- list_selected_ID[i] # e.g. WS037.00
@@ -267,7 +279,7 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,list_selected_ID,plot_fig
   
   df_tmp  <-data_subset[data_subset$LOCATION_ID==id_name,]
   #aggregate(df_tmp
-  var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean)
+  var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean) #aggregate by date
   #length(unique(test$TRIP_START_DATE_f))
   
   #var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
@@ -281,13 +293,13 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,list_selected_ID,plot_fig
   d_z2$TRIP_START_DATE_f <- NULL
   
   df2 <- as.data.frame(d_z2)
+  df2$date <- rownames(df2)
+  rownames(df2) <- NULL
   df2$COL_SCORE <- as.numeric(as.character(df2$COL_SCORE))
   df2$rainfall <- as.numeric(as.character(df2$rainfall))
   
   #plot(df2$rainfall)
-  
-
-  list_pix[[i]] <- pix_ts
+  #list_pix[[i]] <- pix_ts
   
   if(plot_fig==T){
 
@@ -362,15 +374,21 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,list_selected_ID,plot_fig
     #text(threshold_val,y_loc,paste(as.character(threshold_val)),pos=1,offset=0.1)
     
     dev.off()
+
+    #res_pix <- 480
+    #col_mfrow <- 2
+    #row_mfrow <- 1
+    
+    #png(filename=paste("Figure4_","histogram_coliform_measurements_",year_processed,"_",id_name,"_",out_suffix,".png",sep=""),
+    #    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
     
     plot(df2$rainfall)
     plot(df2$rainfall,df2$COL_SCORE)
     plot(df2$rainfall,log(df2$COL_SCORE))
+    plot(log(df2$rainfall),log(df2$COL_SCORE))
     
     
   }
-  
-  
   
   ## Now correlation.
   #sum(is.na(df2$rainfall))
@@ -383,8 +401,8 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,list_selected_ID,plot_fig
   #Kepp number of NA for scores... 
   #Summarize by season...
   ## Threshold?
-  station_summary_obj <- list(nb_zero,nb_NA)
-  names(station_summary_obj) <- c("nb_zero","nb_NA")
+  station_summary_obj <- list(nb_zero,nb_NA,df2)
+  names(station_summary_obj) <- c("nb_zero","nb_NA","df_combined")
   return(station_summary_obj)
 }
 
