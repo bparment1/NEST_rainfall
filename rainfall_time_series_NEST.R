@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 12/11s/2015
+#DATE MODIFIED: 12/11/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -41,11 +41,12 @@ library(rgeos)                  # spatial analysis, topological and geometric op
 library(sphet)                  # spatial analyis, regression eg.contains spreg for gmm estimation
 library(forecast)               # arima and other time series methods
 library(lubridate)              # date and time handling tools
+library(parallel)               # access to parallelization functions
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_11232015.R" #PARAM 1
-script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 2
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_12112015.R" #PARAM 1
+script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
 
@@ -236,179 +237,41 @@ dev.off()
 #
 
 freq_station <- sort(table(data_subset$LOCATION_ID),decreasing=T) # select top 2 stations in term of availability
-list_selected_ID <- names(freq_station)[1:2] #select top 2
+list_selected_ID <- names(freq_station)[1:25] #select top 25
+list_selected_ID <- names(freq_station) #select top 25
+
 #View(freq_station)
 
 ##This will be a function later on...
 df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
 #list_selected_pix <- 11:14
 list_pix <- vector("list",length=length(list_selected_ID))
-#threshold <- 
 
-debug(plotting_coliform_and_rainfall)
-i <- 1
-test <- plotting_coliform_and_rainfall(i,df_ts_pix,data_var,list_selected_ID,plot_fig=T)
-  
-plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID,plot_fig=T){
-  
-  # Input arguments:
-  # i : selected station
-  # df_ts_pix_data : data extracted from raster layer
-  # data_var : data with coliform measurement
-  # list_selected_ID : list of selected station
-  # plot_fig : if T, figures are plotted11111
-  # Output
-  #
-  
-  ##### START FUNCTION ############
-  
-  #get the relevant station
-  id_name <- list_selected_ID[i] # e.g. WS037.00
-  id_selected <- df_ts_pix[[var_ID]]==id_name
+#debug(plotting_coliform_and_rainfall)
+#i <- 1
 
-  ### Not get the data from the time series
-  data_pixel <- df_ts_pix[id_selected,]
-  var_pix_ts <- t(as.data.frame(subset(data_pixel,select=var_name)))
-  #pix <- t(data_pixel[1,24:388])#can subset to range later
-  pix_ts <- t(as.data.frame(subset(data_pixel,select=r_ts_name))) #can subset to range later
-  
-  ## Process the coliform data
-  
-  #there are several measurements per day for some stations !!!
-  #id_name <- data_pixel[[var_ID]]
-  
-  df_tmp  <-data_subset[data_subset$LOCATION_ID==id_name,]
-  #aggregate(df_tmp
-  var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean) #aggregate by date
-  #length(unique(test$TRIP_START_DATE_f))
-  
-  #var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
-  
-  d_z <- zoo(pix_ts,idx) #make a time series ...
-  names(d_z)<- "rainfall"
-  d_var <- zoo(var_pix,var_pix$TRIP_START_DATE_f)
-  #plot(d_var,pch=10)
-  
-  d_z2 <- merge(d_z,d_var)
-  d_z2$TRIP_START_DATE_f <- NULL
-  
-  df2 <- as.data.frame(d_z2)
-  df2$date <- rownames(df2)
-  rownames(df2) <- NULL
-  df2$COL_SCORE <- as.numeric(as.character(df2$COL_SCORE))
-  df2$rainfall <- as.numeric(as.character(df2$rainfall))
-  
-  #plot(df2$rainfall)
-  #list_pix[[i]] <- pix_ts
-  
-  if(plot_fig==T){
+#test <- lapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
+#               df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T)
 
-    res_pix <- 480
-    col_mfrow <- 2
-    row_mfrow <- 1
-    
-    ###
-    #Figure 3b
-    png(filename=paste("Figure3b_","pixel_profile_var_combined_",id_name,"_",out_suffix,".png",sep=""),
-        width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-    
-    #plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
-    #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
-    plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
-    abline(h=threshold_val,col="green")
-    
-    par(new=TRUE)              # key: ask for new plot without erasing old
-    #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
-    plot(df2$COL_SCORE,pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
-    #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
-    legend("topleft",legend=c("stations"), 
-           cex=1.2,col="red",pch =10,bty="n")
-    
-    axis(4,cex=1.2)
-    mtext(4, text = "coliform scores", line = 3)
-    
-    title(paste("Station time series",id_name,sep=" "))
-    
-    dev.off()
-    
-    #Figure 3c
-    png(filename=paste("Figure3c_","pixel_profile_var_combined_log_scale_",id_name,"_",out_suffix,".png",sep=""),
-        width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-    
-    #plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
-    #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
-    plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
-    abline(h=threshold_val,col="green")
-    par(new=TRUE)              # key: ask for new plot without erasing old
-    #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
-    plot(log(df2$COL_SCORE),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
-    
-    #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
-    legend("topleft",legend=c("stations"), 
-           cex=1.2,col="red",pch =10,bty="n")
-    
-    axis(4,cex=1.2)
-    mtext(4, text = "coliform scores", line = 3)
-    
-    title(paste("Station time series",id_name,sep=" "))
-    
-    dev.off()
-    
-    ####Histogram of values
-    
-    res_pix <- 480
-    col_mfrow <- 2
-    row_mfrow <- 1
-    
-    png(filename=paste("Figure4_","histogram_coliform_measurements_",year_processed,"_",id_name,"_",out_suffix,".png",sep=""),
-        width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-    
-    hist_val <- hist(df2$COL_SCORE,main="",xlab="COLIFORM SCORES")
-    title(paste("Histrogram of coliform scores for station",id_name,"in",year_processed,sep=" "))
-    #abline(v=threshold_val,col="green" )
-    legend("topright",legend=c("treshold val"), 
-           cex=1.2, col="green",lty =1,bty="n")  
-    
-    y_loc <- max(hist_val$counts)/2
-    
-    #text(threshold_val,y_loc,paste(as.character(threshold_val)),pos=1,offset=0.1)
-    
-    dev.off()
+#Takes 5mintues or less on bpy50 laptop
+num_cores <- 4
+list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
+                    df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T,
+                    mc.preschedule=FALSE,mc.cores= num_cores)
 
-    #res_pix <- 480
-    #col_mfrow <- 2
-    #row_mfrow <- 1
-    
-    #png(filename=paste("Figure4_","histogram_coliform_measurements_",year_processed,"_",id_name,"_",out_suffix,".png",sep=""),
-    #    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-    
-    plot(df2$rainfall)
-    plot(df2$rainfall,df2$COL_SCORE)
-    plot(df2$rainfall,log(df2$COL_SCORE))
-    plot(log(df2$rainfall),log(df2$COL_SCORE))
-    
-    
-  }
-  
-  ## Now correlation.
-  #sum(is.na(df2$rainfall))
-  #[1] 0
-  nb_zero <- sum((df2$rainfall==0)) #203
-  nb_NA <- sum(is.na(df2$COL_SCORE))
-  ## Cumulated precip and lag?
-  #Keep number of  0 for every year for rainfall
-  #summarize by month
-  #Kepp number of NA for scores... 
-  #Summarize by season...
-  ## Threshold?
-  station_summary_obj <- list(nb_zero,nb_NA,df2)
-  names(station_summary_obj) <- c("nb_zero","nb_NA","df_combined")
-  return(station_summary_obj)
-}
+save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",out_suffix,".RData",sep="")))
 
-data_dz <- do.call(cbind,list_pix)
-colnames(data_dz) <- list_selected_ID
-data_dz <- zoo(data_dz,idx)
+#l_png_files <- mclapply(1:length(unlist(lf_mean_mosaic)),FUN=plot_mosaic,
+#                        list_param= list_param_plot_mosaic,
+#                        mc.preschedule=FALSE,mc.cores = num_cores)
+
+list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
+data_df <- do.call(rbind,list_cleaning_df)
+#colnames(data_df) <- list_selected_ID
+#data_dz <- zoo(data_dz,idx)
+
+plot(log(data_df$rainfall),log(data_df$COL_SCORE))
+plot(data_df$rainfall,data_df$COL_SCORE)
 
 ## IDENTIFY 2 inches events?
 
