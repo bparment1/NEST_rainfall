@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 12/11/2015
+#DATE MODIFIED: 12/15/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -16,7 +16,12 @@
 # - Select 2 inches rainfall events and correlates with bacteria data
 # - Compute accumulated rain over several days using time series functions
 # - Make a movie sequence later on using animation package in R
-#
+# - create data.frame with combined data for 2003-2015 
+#  - Future analyses can also break down the relationship by:
+#COL_measurements ~ rainfall
+#by Station ID
+#by watershed
+#by year
 #################################################################################################
 
 ###Loading R library and packages                                                      
@@ -52,7 +57,7 @@ source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #sour
 
 ##### Functions used in this script 
 
-create_dir_fun <- function(outDir,out_suffix){
+create_dir_fun <- function(outDir,out_suffix=NULL){
   #if out_suffix is not null then append out_suffix string
   if(!is.null(out_suffix)){
     out_name <- paste("output_",out_suffix,sep="")
@@ -85,7 +90,7 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_12082015" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_12152015" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=TRUE #PARAM8
 num_cores <- 11 #PARAM 9
 
@@ -157,6 +162,8 @@ proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-long
 dat_stat <- remove.duplicates(dat_stat)
 #dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
 nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
+
+
 
 r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
 
@@ -265,15 +272,39 @@ save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",out_s
 #                        list_param= list_param_plot_mosaic,
 #                        mc.preschedule=FALSE,mc.cores = num_cores)
 
-list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
+list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){try(x[[i]]$df_combined)},x=list_df_combined)
 data_df <- do.call(rbind,list_cleaning_df)
-#colnames(data_df) <- list_selected_ID
-#data_dz <- zoo(data_dz,idx)
+data_df$rainfall <- as.numeric(data_df$rainfall)
+data_df$COL_SCORE <- as.numeric(data_df$COL_SCORE)
 
 plot(log(data_df$rainfall),log(data_df$COL_SCORE))
 plot(data_df$rainfall,data_df$COL_SCORE)
 
 ## IDENTIFY 2 inches events?
+
+### Save objects for later analyses: Add year in the name for later on!!!
+#Future analyses can also break down the relationship by:
+#COL_measurements ~ rainfall
+#by Station ID
+#by watershed
+#by year
+#
+#
+
+data_df_combined <- merge(data_df,dat_stat[,c("LOCATION_ID","LONGITUDE_DECIMAL","LOCATION_ID")],by="LOCATION_ID")
+write.table(data_df_combined, file=file.path(out_dir,paste("ata_df_combined_coliform_measurements","_",
+                                                           out_suffix,".txt",sep="")),sep=",")
+
+data_df_combined_spdf <- data_df_combined
+
+coordinates(data_df_combined_spdf) <- cbind(data_df_combined_spdf$LONGITUDE_DECIMAL,data_df_combined_spdf$LATITUDE_DECIMAL)
+proj4string(data_df_combined_spdf) <- proj_str
+
+writeOGR(dat_stat,dsn= out_dir,layer= paste("dat_stat_locations_coliform_measurements","_",out_suffix,sep=""), 
+         driver="ESRI Shapefile",overwrite_layer=TRUE)
+writeOGR(data_df_combined_spdf,dsn= out_dir,layer= paste("data_df_combined_coliform_measurements","_",out_suffix,sep=""), 
+         driver="ESRI Shapefile",overwrite_layer=TRUE)
+
 
 
 ############################ END OF SCRIPT #######################
