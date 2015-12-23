@@ -1,3 +1,8 @@
+### Modifications from code from Brian McGill 
+# By Benoit Parmentier
+# CREATED ON:
+# MODIFIED ON: 12232015
+
 # Creates TimeRaster class
 # Timeraster is a subclass of stack in the Raster package
 # it adds an xts time series (using only the index)
@@ -53,15 +58,18 @@ require(raster)
 require(xts)
 setOldClass("xts") #make S3 object accessible to S4 objects
 
+## See Advanced R p. 113
+#This is a S4 class. Check that the length of raster stack and xts objects are the same...
 setClass("TimeRaster",
-         representation(ts="xts"),
-         contains="RasterStack",
-         validity=function(object) {
+         representation(ts="xts"), #tag
+         contains="RasterStack", #TimeRaster inherits from RasterStack classs
+         validity=function(object) { #validity method, checks if object is valid
            if (nlayers(object)!=length(object@ts))
              "Number of layers not equal length of timeseries"
            else
              TRUE
          }
+         #Add prototype later for default values?
 )
 
 setMethod(
@@ -75,7 +83,7 @@ setMethod(
   }
 )
 
-#convenience constructor
+#convenience constructor #this is used to create a TimeRaster object
 TimeRaster<-function(rast,datelist) {
   if (class(rast)!="RasterStack" && class(rast)!="RasterBrick")
     #assume it is a list of files and see how that works out
@@ -99,6 +107,8 @@ setMethod(
   } #end [[ function method
 )
 
+#This is a new generic so we need to use a call to standardGeneric
+#standardGeneric() is the S4 equivalent to UseMethod()
 setGeneric("getTS",function(object,...){standardGeneric("getTS")})
 setMethod(f="getTS",signature="TimeRaster",
           definition<-function(object,x,y) {
@@ -305,9 +315,7 @@ parseit<-function(textsub) {
   return(args)
 }
 
-
-
-
+#################################################################
 
 # #sample code to load 2014 stack
 # files <- list.files(path= "/data/prismrain2014", pattern=".tif$", all.files=T, full.names=T)
@@ -322,3 +330,31 @@ parseit<-function(textsub) {
 # plot(rftr[["2014-10-01 TO 2014-10-05"]])
 # monthlyrf=rftr[["UPTO MONTHS"]]
 
+#sample code to load 2014 stack
+in_dir <- "/home/bparmentier/Google Drive/NEST/prism_rain/prismrain2014"
+
+files <- list.files(path= in_dir, pattern=".tif$", all.files=T, full.names=T)
+rf=stack(files)
+ts=xts(1:365,as.Date("2014-01-01")+0:364) 
+rftr=new("TimeRaster",rf,ts=ts) #create a TimeRaster object
+#better to use constructor as one of:
+rftr=TimeRaster(files,ts)
+rftr=Timeraster(rf,ts)
+rftr=TimeRaster(rf,as.Date("2014-01-01")+0:364)
+#now use it
+plot(rftr[["2014-10-01 TO 2014-10-05"]])
+monthlyrf=rftr[["UPTO MONTHS"]]
+class(monthlyrf)
+plot(monthlyrf)
+
+########### END OF SCRIPT #################
+
+## For testing to learn:
+
+#SetClass("Person",
+#         slots=list(name="character",age="numeric"))
+#SetClass("Employee",
+#         slots=list(boss= "Person"),
+#         contains="Person")
+#alice <- new("Person",name="Alice",age=40)
+#john <- new("Employee",name="John",age=20,boss=alice)
