@@ -72,11 +72,12 @@ setClass("TimeRaster",
          #Add prototype later for default values?
 )
 
+### Method used to print the content of a TimeRaster object when typing it on the console
 setMethod(
   f="show",
   signature="TimeRaster",
   definition=function(object) {
-    callNextMethod()
+    callNextMethod() #this is a call to the parent function for the slot raster
     cat("Time dimension has",toString(length(object@ts)),"time periods\n")
     show(head(index(object@ts)))
     
@@ -315,6 +316,20 @@ parseit<-function(textsub) {
   return(args)
 }
 
+### Get a function to extract transect and create an hovmoller plot?
+
+#This is a new generic so we need to use a call to standardGeneric
+#standardGeneric() is the S4 equivalent to UseMethod()
+setGeneric("getTS",function(object,...){standardGeneric("getTS")})
+setMethod(f="getTS",signature="TimeRaster",
+          definition<-function(object,x,y) {
+            row=rowFromY(object,y)
+            col=colFromX(object,x)
+            m=getValues(object,row)[col,]
+            return(xts(as.vector(m),index(object@ts)))
+          }
+)
+
 #################################################################
 
 # #sample code to load 2014 stack
@@ -341,11 +356,47 @@ rftr=new("TimeRaster",rf,ts=ts) #create a TimeRaster object
 rftr=TimeRaster(files,ts)
 rftr=Timeraster(rf,ts)
 rftr=TimeRaster(rf,as.Date("2014-01-01")+0:364)
+
+str(rftr)
+rftr
+
 #now use it
 plot(rftr[["2014-10-01 TO 2014-10-05"]])
 monthlyrf=rftr[["UPTO MONTHS"]]
 class(monthlyrf)
 plot(monthlyrf)
+
+#Extract pixel time series profile for TimeRaster
+tf <- getTS(rftr,-69,45)
+class(tf) #xts and zoo
+plot(tf)
+
+## Rolling windows and averages
+
+foo <- xts(1:100, order.by=Sys.Date()+0:99)
+apply.monthly(foo, sum)
+#[,1]
+#2012-08-31  105
+#2012-09-30  885
+#2012-10-31 1860
+#2012-11-25 2200
+
+
+apply.monthly(foo, quantile)
+#0%   25%  50%   75% 100%
+#2012-08-31  1  4.25  7.5 10.75   14
+#2012-09-30 15 22.25 29.5 36.75   44
+#2012-10-31 45 52.50 60.0 67.50   75
+#2012-11-25 76 82.00 88.0 94.00  100
+
+getSymbols("SPY", src='yahoo', from='2012-01-01', to='2012-08-01')
+idx <- index(SPY)[endpoints(SPY, 'months')]
+out <- lapply(idx, function(i) {
+  as.xts(rollapplyr(as.zoo(SPY[paste0("/", i)]), 5, 
+                    function(x) coef(lm(x[, 4] ~ x[, 1]))[2], by.column=FALSE))
+})
+sapply(out, NROW)
+#[1]  16  36  58  78 100 121 142 143
 
 ########### END OF SCRIPT #################
 
