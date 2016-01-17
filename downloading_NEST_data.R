@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 01/15/2016
+#DATE MODIFIED: 01/17/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -27,6 +27,7 @@ library(bitops)
 require(RCurl)
 require(stringr)
 require(XML)
+library(lubridate)
 
 ###### Functions used in this script sourced from other files
 
@@ -40,25 +41,33 @@ require(XML)
 downloading_prism_product <- function(start_date, end_date,var_name,num_cores){
   #
   download_prism <- function(date_selected,var_name){
-    url_product <- "http://services.nacse.org/prism/data/public/4km/" #URL is a constant...
+    url_product <- "http://services.nacse.org/prism/data/public/4km" #URL is a constant...
     var_name <- "tmin" #tmax,ppt
-    url_product_var <- paste(url_product,var_name,sep="")
+    #url_product_var <- paste(url_product,var_name,sep="")
+    url_product_var <- file.path(url_product,var_name,date_selected)
     #system("wget --content-disposition $base_url/$clim_var/$day");
-    cmd_str <- paste("wget --content-disposition ",url_product_var,date_selected,sep="")
+    cmd_str <- paste("wget --content-disposition ",url_product_var,sep="")
     system(cmd_str)
     df <- data.frame(var=var_name,date=date_selected,url=url_product)
     return(df)
   }
   
+  ##### Start of Script #####
+  
+  
   start_date <- as.Date(start_date,format="%Y-%m-%d") #start date
   end_date <- as.Date(end_date,format="%Y-%m-%d") #end date
   dates_range <- seq.Date(start_date, end_date, by="1 day") #sequence of dates
-  dates_range_format <- format="%Y%m%d") #end date
+  #dates_range_format <- as.Date(dates_range,format="%Y%m%d") #end date
+  date_year <- strftime(dates_range, "%Y")
+  date_month <- strftime(dates_range , "%m") # current month of the date being processed
+  date_day <- strftime(dates_range , "%d")
   
+  dates_range_prism_format <- paste(date_year,date_month,date_day,sep="")
   #20090405
   
-  download_prism(dates_range[1],var_name)
-  l_df_download <- mclapply(dates_range,FUN=download_prism,var_name=var_name,
+  s_obj <- download_prism(dates_range_prism_format[1],var_name)
+  l_df_download <- mclapply(dates_range_prism_format,FUN=download_prism,var_name=var_name,
                             mc.preschedule=FALSE,mc.cores = num_cores)
   
   #wget http://services.nacse.org/prism/data/public/4km/tmin/20090405
@@ -90,8 +99,8 @@ load_obj <- function(f){
 
 in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
-start_date <- "2012-01-01" #PARAM 12
-end_date <- "2012-12-31" #PARAM 13
+start_date <- "2011-01-01" #PARAM 12
+end_date <- "2011-12-31" #PARAM 13
 
 var_name <- "tmin"
 num_cores <- 4
@@ -99,8 +108,7 @@ file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
 out_suffix <-"NEST_prism_01142016" #output suffix for the files and ouptu folder #PARAM 7
-create_out_dir_param=TRUE #PARAM8
-
+create_out_dir_param=FALSE #PARAM8
 
 out_dir <- in_dir #output will be created in the input dir
 out_suffix_s <- out_suffix #can modify name of output suffix
