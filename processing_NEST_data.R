@@ -78,11 +78,10 @@ load_obj <- function(f){
 ## 3)
 ### Other functions ####
 
-function_processing_NEST_data <- "processing_NEST_data_function_01232016.R" #PARAM 1
+function_processing_NEST_data <- "processing_NEST_data_function_01232016b.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_processing_NEST_data)) #source all functions used in this script 1.
-
 
 ############################################################################
 #####  Parameters and argument set up ###########
@@ -99,7 +98,7 @@ num_cores <- 4 #param 6
 file_format <- ".tif" #param 7
 NA_value <- -9999 # param 8
 NA_flag_val <- NA_value 
-out_suffix <-"NEST_prism_01212016" #output suffix for the files and ouptu folder #param 9
+out_suffix <-"NEST_prism_01222016" #output suffix for the files and ouptu folder #param 9
 create_out_dir_param=TRUE # param 10
 ref_rast_name <- "/home/bparmentier/Google Drive/NEST/prism_rain/prismrain2012/prismrain_20120101.tif" #param 10
 agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!! #param 11
@@ -120,13 +119,15 @@ if(create_out_dir_param==TRUE){
 #turn this into a function and download and process by year
 # do 2003 to 2014
 
+debug(download_and_process_prism_data) 
+download_and_process_prism_data(in_dir,out_dir,start_date,end_date,var_name,ref_rast_name,
+                      agg_param,num_cores=1,create_out_dir_param=FALSE,NA_value=-9999,out_suffix="",
+                      file_format=".tif",download_file=T,unzip_files=T,match_file=T,lf_zip=NULL,lf_r=NULL)
 
-
-#debug(downloading_prism_product) 
-
-
-download_and_process_prism_data <- function(in_dir,out_dir,start_date,end_date,var_name,num_cores,file_format,
-         NA_value,out_suffix,create_out_dir_param,ref_rast_name,agg_param,download_file=T,unzip_files=T,match_file=T,lf_zip=NULL){
+  
+download_and_process_prism_data <- function(in_dir,out_dir,start_date,end_date,var_name,ref_rast_name,
+         agg_param,num_cores=1,create_out_dir_param=FALSE,NA_value=-9999,out_suffix="",
+         file_format=".tif", download_file=T,unzip_files=T,match_file=T,lf_zip=NULL,lf_r=NULL){
   
   #INPUTS
   #1)in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
@@ -145,50 +146,46 @@ download_and_process_prism_data <- function(in_dir,out_dir,start_date,end_date,v
   
   NA_flag_val <- NA_value 
   
-  ######### PART 1 ######
+  ######### PART 1: downloading prsim product ######
   if(download_file==T){
     setwd(in_dir)
-    download_obj <- downloading_prism_product(start_date, end_date,var_name,num_cores,out_dir=NULL)
+    #debug(downloading_prism_product)
+    download_obj <- downloading_prism_product(start_date, end_date,var_name,num_cores,in_dir=in_dir,out_dir=NULL)
     setwd(out_dir)
   }else{
-    download_obj<-try(load_obj(file.path(out_dir,paste("downloaded_obj _",var_name,".RData",sep=""))))
+    download_obj<-try(load_obj(file.path(in_dir,paste("downloaded_prism_data_",var_name,".RData",sep=""))))
   }
   
-  
-  ####### PART 2 #######
+  ####### PART 2: extracting files #######
 
   ## run by year!!
   ## loop through year...or make this a function?
-  if(zip_file==T){
-    if(!is.null(lf_zip)){
-      lf_r <- lapply(lf_zip, unzip,exdir= out_dir)
-      lf_r <- list.files(pattern="*bil.bil$",path=out_dir,full.names = T)
-    }else{
+  if(unzip_files==T){
+    if(is.null(lf_zip)){
       lf_zip <- download_obj$lf_zip
-      lf_r <- lapply(lf_zip, unzip,exdir= out_dir)
-      lf_r <- list.files(pattern="*bil.bil$",path=out_dir,full.names = T)
+    }
+    l_year <- length(lf_zip)
+    list_lf_r <- vector("list",length=l_year)
+    for(i in 1:length(l_year)){
+        out_dir_year <- unique(dirname(lf_zip[[i]]))
+        lf_r <- lapply(lf_zip[[i]], unzip,exdir= out_dir_year)
+        lf_r <- list.files(pattern="*bil.bil$",path=out_dir_year,full.names = T)
+        list_lf_r[[i]] <- lf_r
     }
   }
-  
-  ####### PART 3 #######  
-  
-  list_lf_r_reg <- vector("list",length(test))
-  for(i in 1:length(test)){
-    file_zip_year <- test[[i]]$file_zip
-    out_dir_year <- unique((test[[i]]$dir))
-    lf_zip <- file.path(out_dir_year,file_zip_year)
-    lf_r <- lapply(lf_zip, unzip,exdir= out_dir_year)
-    lf_r <- list.files(pattern="*bil.bil$",path=out_dir_year,full.names = T)
+
+  ########## PART 3: Match to study area ##############
     
-    ########## PART 2: Match to study area ##############
-    
-    ## Match to the study area...
-    ## Now crop and reproject if necessary
-    #Use function above
-    #
-    r_ref <- raster(ref_rast_name)
-    plot(r_ref)
-    agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!!
+  ## Match to the study area...
+  ## Now crop and reproject if necessary
+  #Use function above
+  r_ref <- raster(ref_rast_name)
+  list_lf_r_reg <- vector("list",length(list_lf_r))
+  for(i in 1:length(list_lf_r)){
+    lf_r <- list_lf_r[[i]]
+    out_dir_year <- unique(dirname(lf_r))
+    #plot(r_ref)
+    #agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!!
     #use r_ref as reference...
     out_rast_name <- NULL
     list_param_create_region <- list(as.list(lf_r),
@@ -200,8 +197,6 @@ download_and_process_prism_data <- function(in_dir,out_dir,start_date,end_date,v
                                          "file_format","NA_flag_val",
                                          "input_proj_str","out_suffix","out_dir")
     #debug(create__m_raster_region)
-    #test <- create__m_raster_region(1,list_param=list_param_create_region)
-    
     #test <- create__m_raster_region(1,list_param=list_param_create_region)
     lf_r_reg <- mclapply(1:length(lf_r),
                          FUN=create__m_raster_region,
@@ -215,11 +210,10 @@ download_and_process_prism_data <- function(in_dir,out_dir,start_date,end_date,v
     list_lf_r_reg[[i]] <- lf_r_reg
   }
   
-  
+  ##########
+  return(list_lf_reg)
 }
   
-
-########## PART 3: Match to study area ##############
 
 
 
