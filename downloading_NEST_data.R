@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 01/21/2016
+#DATE MODIFIED: 01/22/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -113,29 +113,53 @@ downloading_prism_product <- function(start_date, end_date,var_name,num_cores,ou
   date_month <- strftime(dates_range , "%m") # current month of the date being processed
   date_day <- strftime(dates_range , "%d")
   dates_range_prism_format <- paste(date_year,date_month,date_day,sep="")
-  #20090405
   
+  df_dates_range <- data.frame(dates_range_prism_format=dates_range_prism_format,
+                               dates_range=dates_range,
+                               year=date_year)
+  #20090405
+  ##Now subset...by year
+  list_year <- unique(date_year)
+  
+  ##First create output dir by year!
+  list_out_dir <- vector("list",length=length(list_year))
   if (is.null(out_dir)){
-    out_dir <- file.path(getwd(),paste("prism_",var_name,date_year,sep=""))
-    create_dir_fun(out_dir)
+    for(i in 1:length(list_year)){
+      out_dir_tmp <- file.path(getwd(),paste("prism_",var_name,"_",list_year[i],sep=""))
+      create_dir_fun(out_dir_tmp)
+      list_out_dir[[i]] <- out_dir_tmp
+    }
+    names(list_out_dir) <- list_year
   }
 
-  #s_obj <- download_prism(dates_range_prism_format[1],var_name)
-  l_df_download <- mclapply(dates_range_prism_format,
-                            FUN=download_prism,
-                            var_name=var_name,
-                            out_dir=out_dir,
-                            mc.preschedule=FALSE,
-                            mc.cores = num_cores)
-  #Currently we use only this:
-  #wget http://services.nacse.org/prism/data/public/4km/tmin/20090405
-  
-  df_downloaded <- do.call(rbind, l_df_download)
-  df_downloaded$date <- as.character(df_downloaded$date)
-  lf_zip <- unlist(lapply(df_downloaded$date,function(x){list.files(pattern=paste(x,".*.zip$",sep=""),path=out_dir)}))
-  df_downloaded$file_zip <- lf_zip
-  df_downloaded$dir <- out_dir
-  return(df_downloaded)
+  ## loop through year..and download
+  list_df_downloaded <- vector("list",length=length(list_year))
+  for(i in 1:length(list_year)){
+    df_tmp <- subset(df_dates_range,df_dates_range$year==list_year[[i]])
+    df_tmp$dates_range_prism_format <- as.character(df_tmp$dates_range_prism_format)
+    #s_obj <- download_prism(dates_range_prism_format[1],var_name)
+    out_dir_tmp <- list_out_dir[[i]]
+    dates_range_prism_format_tmp <- df_tmp$dates_range_prism_format
+    l_df_download <- mclapply(dates_range_prism_format_tmp,
+                              FUN=download_prism,
+                              var_name=var_name,
+                              out_dir=out_dir_tmp,
+                              mc.preschedule=FALSE,
+                              mc.cores = num_cores)
+    #Currently we use only this:
+    #wget http://services.nacse.org/prism/data/public/4km/tmin/20090405
+    
+    df_downloaded <- do.call(rbind, l_df_download)
+    df_downloaded$date <- as.character(df_downloaded$date)
+    lf_zip <- unlist(lapply(df_downloaded$date,function(x){list.files(pattern=paste(x,".*.zip$",sep=""),
+                                                                      path=out_dir_tmp)}))
+    df_downloaded$file_zip <- lf_zip
+    df_downloaded$dir <- out_dir_tmp
+    list_df_downloaded[[i]] <- df_downloaded
+  }
+  ##
+  names(list_df_downloaded)<- list_year
+  return(list_df_downloaded)
 }
 
 #This function creates a spatial polygon data frame object for the extent matching a raster input
@@ -231,7 +255,7 @@ create__m_raster_region <-function(j,list_param){
   #
   # Authors: Benoit Parmentier
   # Created: 10/01/2015
-  # Modified: 11/01/2015
+  # Modified: 01/20/2016
   #TODO:
   # - Add option to disaggregate...
   # - Modify agg param to be able to use different ones by file j for the mcapply function
@@ -307,22 +331,26 @@ create__m_raster_region <-function(j,list_param){
 ## 2) creation of TimeRaster object with summaries?
 ## 3)
 
+############################################################################
 #####  Parameters and argument set up ###########
 
 in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
-out_dir <- "/home/bparmentier/Google Drive/NEST/"
-start_date <- "2011-01-01" #PARAM 12
-end_date <- "2011-12-31" #PARAM 13
+out_dir <- "/home/bparmentier/Google Drive/NEST/" #param 2
+start_date <- "2011-12-17" # param 3
+end_date <- "2012-01-05" # param 4
 
-var_name <- "ppt" #tmin,tmax
-num_cores <- 4
-file_format <- ".tif" #PARAM 4
-NA_value <- -9999 #PARAM5
-NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_01212016" #output suffix for the files and ouptu folder #PARAM 7
-create_out_dir_param=TRUE #PARAM8
-ref_rast_name <- "/home/bparmentier/Google Drive/NEST/prism_rain/prismrain2012/prismrain_20120101.tif"
+var_name <- "ppt" #tmin,tmax #param 5
+num_cores <- 4 #param 6
+file_format <- ".tif" #param 7
+NA_value <- -9999 # param 8
+NA_flag_val <- NA_value 
+out_suffix <-"NEST_prism_01212016" #output suffix for the files and ouptu folder #param 9
+create_out_dir_param=TRUE # param 10
+ref_rast_name <- "/home/bparmentier/Google Drive/NEST/prism_rain/prismrain2012/prismrain_20120101.tif" #param 10
+agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!! #param 11
+
+######### PART 0: Set up the output dir ################
 
 out_dir <- in_dir #output will be created in the input dir
 out_suffix_s <- out_suffix #can modify name of output suffix
@@ -341,42 +369,50 @@ setwd(out_dir)
   
 ##### Now unzip by year ...
 
-lf_zip <- file.path(test$dir,test$file_zip)
-lf_r <- lapply(lf_zip, unzip,exdir=out_dir)
-lf_r <- list.files(pattern="*bil.bil$",path=out_dir,full.names = T)
-
-########## PART 2: Match to study area ##############
-
-## Match to the study area...
-## Now crop and reproject if necessary
-#Use function above
-#
-r_ref <- raster(ref_rast_name)
-plot(r_ref)
-agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!!
-#use r_ref as reference...
-out_rast_name <- NULL
-list_param_create_region <- list(as.list(lf_r),
-                                 r_ref, out_rast_name,agg_param,
-                                 file_format,NA_flag_val,
-                                 input_proj_str=NULL,out_suffix="",out_dir)
-names(list_param_create_region) <- c("raster_name",
-                                     "reg_ref_rast", "out_rast_name","agg_param",
-                                     "file_format","NA_flag_val",
-                                     "input_proj_str","out_suffix","out_dir")
-#debug(create__m_raster_region)
-#test <- create__m_raster_region(1,list_param=list_param_create_region)
-
-#test <- create__m_raster_region(1,list_param=list_param_create_region)
-lf_r_reg <- mclapply(1:length(lf_r),
-                          FUN=create__m_raster_region,
-                          list_param=list_param_create_region,
-                          mc.preschedule=FALSE,
-                          mc.cores = num_cores)
-#Currently we use only this:
-
-rainfall <- stack(unlist(lf_r_reg ))
-plot(rainfall)
+## run by year!!
+## loop through year...or make this a function?
+list_lf_r_reg <- vector("list",length(test))
+for(i in 1:length(test)){
+  file_zip_year <- test[[i]]$file_zip
+  out_dir_year <- unique((test[[i]]$dir))
+  lf_zip <- file.path(out_dir_year,file_zip_year)
+  lf_r <- lapply(lf_zip, unzip,exdir= out_dir_year)
+  lf_r <- list.files(pattern="*bil.bil$",path=out_dir_year,full.names = T)
+  
+  ########## PART 2: Match to study area ##############
+  
+  ## Match to the study area...
+  ## Now crop and reproject if necessary
+  #Use function above
+  #
+  r_ref <- raster(ref_rast_name)
+  plot(r_ref)
+  agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!!
+  #use r_ref as reference...
+  out_rast_name <- NULL
+  list_param_create_region <- list(as.list(lf_r),
+                                   r_ref, out_rast_name,agg_param,
+                                   file_format,NA_flag_val,
+                                   input_proj_str=NULL,out_suffix="",out_dir_year)
+  names(list_param_create_region) <- c("raster_name",
+                                       "reg_ref_rast", "out_rast_name","agg_param",
+                                       "file_format","NA_flag_val",
+                                       "input_proj_str","out_suffix","out_dir")
+  #debug(create__m_raster_region)
+  #test <- create__m_raster_region(1,list_param=list_param_create_region)
+  
+  #test <- create__m_raster_region(1,list_param=list_param_create_region)
+  lf_r_reg <- mclapply(1:length(lf_r),
+                       FUN=create__m_raster_region,
+                       list_param=list_param_create_region,
+                       mc.preschedule=FALSE,
+                       mc.cores = num_cores)
+  #Currently we use only this:
+  
+  rainfall <- stack(unlist(lf_r_reg ))
+  plot(rainfall)
+  list_lf_r_reg[[i]] <- lf_r_reg
+}
 
 ########## PART 3: Match to study area ##############
 
