@@ -87,13 +87,14 @@ download_prism <- function(date_selected,var_name,out_dir){
   return(df)
 }
 
-downloading_prism_product <- function(start_date, end_date,var_name,num_cores,out_dir=NULL){
+downloading_prism_product <- function(start_date, end_date,var_name,num_cores,in_dir=".",out_dir=NULL){
   #Function to download prism dataset for range of dates and a type of variable(tmin,tmax,precip).
   #Inputs
   #1) start_date: start of date to download
   #2) end_date: end date to download
   #3) var_name: type of variable i.e. tmin, tmax or precip
   #4) num_cores: number of cores used to download
+  #5) in_dir: input directory
   #5) out_dir: directory where to place downloaded files
   #Output: 
   #df_downloaded: data.frame of downloaded files
@@ -125,7 +126,7 @@ downloading_prism_product <- function(start_date, end_date,var_name,num_cores,ou
   list_out_dir <- vector("list",length=length(list_year))
   if (is.null(out_dir)){
     for(i in 1:length(list_year)){
-      out_dir_tmp <- file.path(getwd(),paste("prism_",var_name,"_",list_year[i],sep=""))
+      out_dir_tmp <- file.path(in_dir,paste("prism_",var_name,"_",list_year[i],sep=""))
       create_dir_fun(out_dir_tmp)
       list_out_dir[[i]] <- out_dir_tmp
     }
@@ -135,7 +136,8 @@ downloading_prism_product <- function(start_date, end_date,var_name,num_cores,ou
   ## loop through year..and download
   list_df_downloaded <- vector("list",length=length(list_year))
   for(i in 1:length(list_year)){
-    df_tmp <- subset(df_dates_range,df_dates_range$year==list_year[[i]])
+    year_tmp <- list_year[[i]] #year being dowloaded
+    df_tmp <- subset(df_dates_range,df_dates_range$year==year_tmp)
     df_tmp$dates_range_prism_format <- as.character(df_tmp$dates_range_prism_format)
     #s_obj <- download_prism(dates_range_prism_format[1],var_name)
     out_dir_tmp <- list_out_dir[[i]]
@@ -153,13 +155,27 @@ downloading_prism_product <- function(start_date, end_date,var_name,num_cores,ou
     df_downloaded$date <- as.character(df_downloaded$date)
     lf_zip <- unlist(lapply(df_downloaded$date,function(x){list.files(pattern=paste(x,".*.zip$",sep=""),
                                                                       path=out_dir_tmp)}))
+    df_downloaded$year <- list_year[[i]]
     df_downloaded$file_zip <- lf_zip
     df_downloaded$dir <- out_dir_tmp
+    df_downloaded_fname <- file.path(out_dir_tmp,paste("df_downloaded","_",var_name,"_",year_tmp,".txt",sep=""))
+    write.table(df_downloaded,file=df_downloaded_fname,sep=",")
     list_df_downloaded[[i]] <- df_downloaded
   }
   ##
-  names(list_df_downloaded)<- as.character(list_year)
-  return(list_df_downloaded)
+  names(list_df_downloaded)<- paste("year_",list_year,sep="")
+  
+  list_file_zip_year <- lapply(list_df_downloaded,function(x){x$file_zip})
+  list_out_dir_year <- unique(lapply(list_df_downloaded,function(x){x$dir}))
+  #out_dir_year <- unique((test[[i]]$dir))
+  #file.path(list_out_dir_year,list_file_zip_year)
+  lf_zip <- lapply(1:length(list_out_dir_year),function(i,x,y){file.path(x[[i]],y[[i]])},x=list_out_dir_year,y=list_file_zip_year)
+  names(lf_zip) <- paste("year_",list_year,sep="")
+  
+  downloaded_obj <- list(list_df_downloaded,lf_zip)
+  names(downloaded_obj) <-c("list_df","lf_zip")
+  save(downloaded_obj,file= file.path(in_dir,paste("downloaded_prism_data_",var_name,".RData",sep="")))
+  return(downloaded_obj)
 }
 
 #This function creates a spatial polygon data frame object for the extent matching a raster input
