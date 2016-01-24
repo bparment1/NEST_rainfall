@@ -9,7 +9,7 @@
 #PROJECT: NEST beach closures            
 
 #
-#COMMENTS: -   
+#COMMENTS: - Running processing of prism for 2003 to 2007 included.
 #          - 
 #TO DO: DSS
 # - make this callable from shell using optparse package with documentation with usage
@@ -90,15 +90,15 @@ in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
 out_dir <- "/home/bparmentier/Google Drive/NEST/" #param 2
 
-start_date <- "2014-12-26" # param 3
-end_date <- "201-01-05" # param 4
+start_date <- "2003-01-01" # param 3
+end_date <- "2007-12-31" # param 4
 
 var_name <- "ppt" #tmin,tmax #param 5
 num_cores <- 4 #param 6
 file_format <- ".tif" #param 7
 NA_value <- -9999 # param 8
 NA_flag_val <- NA_value 
-out_suffix <-"NEST_prism_01222016" #output suffix for the files and ouptu folder #param 9
+out_suffix <-"NEST_prism_01232016" #output suffix for the files and ouptu folder #param 9
 create_out_dir_param=TRUE # param 10
 ref_rast_name <- "/home/bparmentier/Google Drive/NEST/prism_rain/prismrain2012/prismrain_20120101.tif" #param 10
 agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!! #param 11
