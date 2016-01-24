@@ -4,14 +4,14 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 01/22/2016
+#DATE MODIFIED: 01/23/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
 #
 #COMMENTS: -   
 #          - 
-#TO DO:ESSSS
+#TO DO: DSS
 # -make this callable from shell?
 #
 #################################################################################################
@@ -362,6 +362,10 @@ if(create_out_dir_param==TRUE){
 }
 
 ########## PART 1: Download and unzip ##############
+
+#turn this into a function and download and process by year
+# do 2003 to 2014
+
 #debug(downloading_prism_product) 
 setwd(in_dir)
 test <- downloading_prism_product(start_date, end_date,var_name,num_cores,out_dir=NULL)
@@ -371,6 +375,7 @@ setwd(out_dir)
 
 ## run by year!!
 ## loop through year...or make this a function?
+
 list_lf_r_reg <- vector("list",length(test))
 for(i in 1:length(test)){
   file_zip_year <- test[[i]]$file_zip
