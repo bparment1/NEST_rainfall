@@ -4,12 +4,12 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 01/24/2016
+#DATE MODIFIED: 02/01/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
 #
-#COMMENTS: - Running processing of prism for 2008 to 2009 included to checkt the bug!!
+#COMMENTS: - Running processing of prism for 2010 to 2011 included !!
 #          - 
 #TO DO: DSS
 # - make this callable from shell using optparse package with documentation with usage
@@ -90,8 +90,8 @@ in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
 out_dir <- "/home/bparmentier/Google Drive/NEST/" #param 2
 
-start_date <- "2008-01-01" # param 3
-end_date <- "2009-12-31" # param 4
+start_date <- "2010-01-01" # param 3
+end_date <- "2011-12-31" # param 4
 
 var_name <- "ppt" #tmin,tmax #param 5
 num_cores <- 4 #param 6
