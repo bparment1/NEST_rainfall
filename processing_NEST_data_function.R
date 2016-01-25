@@ -151,24 +151,12 @@ downloading_prism_product <- function(start_date, end_date,var_name,num_cores,in
     #Currently we use only this:
     #wget http://services.nacse.org/prism/data/public/4km/tmin/20090405
     
-    #Somewhere here error for year 2009 download...
-    #
-    #Error in `$<-.data.frame`(`*tmp*`, "file_zip", value = c("PRISM_ppt_stable_4kmD2_20090101_bil.zip",  : 
-    #                                                           replacement has 364 rows, data has 365 
-    #Need to check which dates are missing!!! extract info from the files zip!!!
-    #
-    lf_zip <- unlist(lapply(df_downloaded$date,function(x){list.files(pattern=paste(x,".*.zip$",sep=""),
-                                                                      path=out_dir_tmp)}))
-    #Now extract
-    #PRISM_ppt_stable_4kmD2_20090108_bil.zip
-    #strsplit("_") get two from the end...
-    #do diff set difference!!
-    
     df_downloaded <- do.call(rbind, l_df_download)
     df_downloaded$date <- as.character(df_downloaded$date)
-
+    lf_zip <- unlist(lapply(df_downloaded$date,function(x){list.files(pattern=paste(x,".*.zip$",sep=""),
+                                                                      path=out_dir_tmp)}))
     df_downloaded$year <- list_year[[i]]
-    df_downloaded$file_zip <- lf_zip #it may here the error occurs, one missing zip/downloaded file!!!
+    df_downloaded$file_zip <- lf_zip
     df_downloaded$dir <- out_dir_tmp
     df_downloaded_fname <- file.path(out_dir_tmp,paste("df_downloaded","_",var_name,"_",year_tmp,".txt",sep=""))
     write.table(df_downloaded,file=df_downloaded_fname,sep=",")
