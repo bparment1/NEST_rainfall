@@ -5,8 +5,8 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 12/15/2015
-#Version: 1
+#DATE MODIFIED: 02/20/2016
+#Version: 2
 #PROJECT: NEST beach closures            
 
 #
@@ -16,12 +16,7 @@
 # - Select 2 inches rainfall events and correlates with bacteria data
 # - Compute accumulated rain over several days using time series functions
 # - Make a movie sequence later on using animation package in R
-# - create data.frame with combined data for 2003-2015 
-#  - Future analyses can also break down the relationship by:
-#COL_measurements ~ rainfall
-#by Station ID
-#by watershed
-#by year
+#
 #################################################################################################
 
 ###Loading R library and packages                                                      
@@ -57,7 +52,7 @@ source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #sour
 
 ##### Functions used in this script 
 
-create_dir_fun <- function(outDir,out_suffix=NULL){
+create_dir_fun <- function(outDir,out_suffix){
   #if out_suffix is not null then append out_suffix string
   if(!is.null(out_suffix)){
     out_name <- paste("output_",out_suffix,sep="")
@@ -82,7 +77,8 @@ load_obj <- function(f){
 
 in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
-
+#in_dir_rainfall <- "/home/bparmentier/Google Drive/NEST_Data/"
+  
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
 proj_str<- CRS_WGS84 #param 2
 CRS_reg <- CRS_WGS84 # PARAM 3
@@ -90,12 +86,12 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_12152015" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_02172016" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=TRUE #PARAM8
-num_cores <- 11 #PARAM 9
+num_cores <- 4 #PARAM 9
 
-rainfall_dir <- "prism_rain/prismrain2012" #PARAM 10
-station_data_fname <- file.path(in_dir, "WQ_TECS_Q.txt") #PARAM 11
+rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
+station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
 
 start_date <- "2012-01-01" #PARAM 12
 end_date <- "2012-12-31" #PARAM 13
@@ -121,69 +117,80 @@ if(create_out_dir_param==TRUE){
   setwd(out_dir) #use previoulsy defined directory
 }
 
-r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=file.path(in_dir,rainfall_dir),full.names=T))) #rainfall time series stack
+
+list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
+
+plot(r_rainfall,y=1)
 
 #### Read in data and add time flag
 
-plot(r_rainfall,y=1)
-data <- read.table(station_data_fname,sep=",",header=T) #this is T-mode using cor matrix
 
-dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
-data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
-data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
-data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
-data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
-dim(data)
-class(data$LOCATION_ID)
-data$LOCATION_ID <- as.character(data$LOCATION_ID)
-length(unique(data$LOCATION_ID)) #There are 2851 stations
+data <- read.table(station_data_fname,sep=",",header=T,fill=T) #this is T-mode using cor matrix
+#
+#> data <- read.table(station_data_fname,sep=",",header=T) #this is T-mode using cor matrix
+#Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
+#                line 47 did not have 35 elements
+function(data,convert_to_inches,in_dir_rst,start_date,end_date,data){
 
-if (convert_to_inches==TRUE){
-  r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
+  ## Format the file first
+  dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
+  data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
+  data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
+  data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
+  data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
+  dim(data)
+  class(data$LOCATION_ID)
+  data$LOCATION_ID <- as.character(data$LOCATION_ID)
+  length(unique(data$LOCATION_ID)) #There are 2851 stations
+  
+  
+  r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=file.path(in_dir_rast),full.names=T))) #rainfall time series stack
+  
+  if (convert_to_inches==TRUE){
+    r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
+  }
+  
+  #### NOW SELECT RELEVANT DATES
+  
+  idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
+  #date_l <- strptime(idx[1], "%Y%m%d") # 
+  dates_l <- format(idx, "%Y%m%d") #  date being processed
+  
+  data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
+  data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
+  
+  #Remote stations without coordinates and make a SPDF
+  dat_stat <- subset(data_subset, !is.na(LONGITUDE_DECIMAL) & !is.na(LATITUDE_DECIMAL))
+  coords <- dat_stat[,c('LONGITUDE_DECIMAL','LATITUDE_DECIMAL')]
+  coordinates(dat_stat) <- coords
+  proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
+  
+  ## Remove duplicates rows from stations to identify uniques sations
+  dat_stat <- remove.duplicates(dat_stat)
+  #dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
+  nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
+  
+  r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
+  
+  x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean, takes about a minute
+  raster_name <- paste("day","_","overall_mean",file_format,sep="")
+  writeRaster(x, file=raster_name,overwrite=T)
+  plot_to_file(raster_name) #quick plot of raster to disk
+  
+  #x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
+  r_date <- getZ(r_rainfall)
+  
+  ## Plot mosaics for Maine for daily predictions in 2014
+  ## Get pixel time series at centroids of tiles used in the predictions
+  
+  df_ts_pixel <- extract(r_rainfall,dat_stat,df=T,sp=T)
+  test<-merge(df_ts_pixel,data_subset,by="LOCATION_ID")
+  
+  #df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
+  r_ts_name <- names(r_rainfall)
+  #d_z <- zoo(df_ts_pixel,idx) #make a time series .
+  
 }
-
-
-#### NOW SELECT RELEVANT DATES
-
-idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
-#date_l <- strptime(idx[1], "%Y%m%d") # 
-dates_l <- format(idx, "%Y%m%d") #  date being processed
-
-data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
-data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
-
-#Remote stations without coordinates and make a SPDF
-dat_stat <- subset(data_subset, !is.na(LONGITUDE_DECIMAL) & !is.na(LATITUDE_DECIMAL))
-coords <- dat_stat[,c('LONGITUDE_DECIMAL','LATITUDE_DECIMAL')]
-coordinates(dat_stat) <- coords
-proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
-
-## Remove duplicates rows from stations to identify uniques sations
-dat_stat <- remove.duplicates(dat_stat)
-#dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
-nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
-
-
-
-r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
-
-x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean, takes about a minute
-raster_name <- paste("day","_","overall_mean",file_format,sep="")
-writeRaster(x, file=raster_name,overwrite=T)
-plot_to_file(raster_name) #quick plot of raster to disk
-
-#x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
-r_date <- getZ(r_rainfall)
-
-## Plot mosaics for Maine for daily predictions in 2014
-## Get pixel time series at centroids of tiles used in the predictions
-
-df_ts_pixel <- extract(r_rainfall,dat_stat,df=T,sp=T)
-test<-merge(df_ts_pixel,data_subset,by="LOCATION_ID")
-
-#df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
-r_ts_name <- names(r_rainfall)
-#d_z <- zoo(df_ts_pixel,idx) #make a time series .
 
 res_pix <- 480
 col_mfrow <- 1
@@ -272,39 +279,15 @@ save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",out_s
 #                        list_param= list_param_plot_mosaic,
 #                        mc.preschedule=FALSE,mc.cores = num_cores)
 
-list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){try(x[[i]]$df_combined)},x=list_df_combined)
+list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
 data_df <- do.call(rbind,list_cleaning_df)
-data_df$rainfall <- as.numeric(data_df$rainfall)
-data_df$COL_SCORE <- as.numeric(data_df$COL_SCORE)
+#colnames(data_df) <- list_selected_ID
+#data_dz <- zoo(data_dz,idx)
 
 plot(log(data_df$rainfall),log(data_df$COL_SCORE))
 plot(data_df$rainfall,data_df$COL_SCORE)
 
 ## IDENTIFY 2 inches events?
-
-### Save objects for later analyses: Add year in the name for later on!!!
-#Future analyses can also break down the relationship by:
-#COL_measurements ~ rainfall
-#by Station ID
-#by watershed
-#by year
-#
-#
-
-data_df_combined <- merge(data_df,dat_stat[,c("LOCATION_ID","LONGITUDE_DECIMAL","LOCATION_ID")],by="LOCATION_ID")
-write.table(data_df_combined, file=file.path(out_dir,paste("ata_df_combined_coliform_measurements","_",
-                                                           out_suffix,".txt",sep="")),sep=",")
-
-data_df_combined_spdf <- data_df_combined
-
-coordinates(data_df_combined_spdf) <- cbind(data_df_combined_spdf$LONGITUDE_DECIMAL,data_df_combined_spdf$LATITUDE_DECIMAL)
-proj4string(data_df_combined_spdf) <- proj_str
-
-writeOGR(dat_stat,dsn= out_dir,layer= paste("dat_stat_locations_coliform_measurements","_",out_suffix,sep=""), 
-         driver="ESRI Shapefile",overwrite_layer=TRUE)
-writeOGR(data_df_combined_spdf,dsn= out_dir,layer= paste("data_df_combined_coliform_measurements","_",out_suffix,sep=""), 
-         driver="ESRI Shapefile",overwrite_layer=TRUE)
-
 
 
 ############################ END OF SCRIPT #######################
