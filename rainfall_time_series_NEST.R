@@ -120,18 +120,28 @@ if(create_out_dir_param==TRUE){
 
 list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
 
-plot(r_rainfall,y=1)
 
 #### Read in data and add time flag
-
 
 data <- read.table(station_data_fname,sep=",",header=T,fill=T) #this is T-mode using cor matrix
 #
 #> data <- read.table(station_data_fname,sep=",",header=T) #this is T-mode using cor matrix
 #Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
 #                line 47 did not have 35 elements
-function(data,convert_to_inches,in_dir_rst,start_date,end_date,data){
+combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rst,start_date,end_date,data){
 
+  #data
+  #convert_to_inches
+  #in_dir_rst
+  #start_date
+  #end_date
+  #data
+  #year_processed <- "2012" #PARAM 16
+  #threshold_val <- 2*25.4 #PARAM 17, in inches or mm
+  #units_val <- "mm"
+  
+  #### Start script ###
+  
   ## Format the file first
   dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
   data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
@@ -142,7 +152,6 @@ function(data,convert_to_inches,in_dir_rst,start_date,end_date,data){
   class(data$LOCATION_ID)
   data$LOCATION_ID <- as.character(data$LOCATION_ID)
   length(unique(data$LOCATION_ID)) #There are 2851 stations
-  
   
   r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=file.path(in_dir_rast),full.names=T))) #rainfall time series stack
   
@@ -172,10 +181,10 @@ function(data,convert_to_inches,in_dir_rst,start_date,end_date,data){
   
   r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
   
-  x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean, takes about a minute
-  raster_name <- paste("day","_","overall_mean",file_format,sep="")
-  writeRaster(x, file=raster_name,overwrite=T)
-  plot_to_file(raster_name) #quick plot of raster to disk
+  #x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean, takes about a minute
+  #raster_name <- paste("day","_","overall_mean",file_format,sep="")
+  #writeRaster(x, file=raster_name,overwrite=T)
+  #plot_to_file(raster_name) #quick plot of raster to disk
   
   #x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
   r_date <- getZ(r_rainfall)
@@ -190,7 +199,43 @@ function(data,convert_to_inches,in_dir_rst,start_date,end_date,data){
   r_ts_name <- names(r_rainfall)
   #d_z <- zoo(df_ts_pixel,idx) #make a time series .
   
+  freq_station <- sort(table(data_subset$LOCATION_ID),decreasing=T) # select top 2 stations in term of availability
+  list_selected_ID <- names(freq_station)[1:25] #select top 25
+  list_selected_ID <- names(freq_station) #select top 25
+  
+  #View(freq_station)
+  
+  ##This will be a function later on...
+  df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
+  #list_selected_pix <- 11:14
+  list_pix <- vector("list",length=length(list_selected_ID))
+  
+  #debug(plotting_coliform_and_rainfall)
+  #i <- 1
+  
+  #test <- lapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
+  #               df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T)
+  
+  #Takes 5mintues or less on bpy50 laptop
+  num_cores <- 4
+  list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
+                               df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T,
+                               mc.preschedule=FALSE,mc.cores= num_cores)
+  
+  save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",out_suffix,".RData",sep="")))
+  
+  #l_png_files <- mclapply(1:length(unlist(lf_mean_mosaic)),FUN=plot_mosaic,
+  #                        list_param= list_param_plot_mosaic,
+  #                        mc.preschedule=FALSE,mc.cores = num_cores)
+  
+  list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
+  data_df <- do.call(rbind,list_cleaning_df)
+  
+  return(dat_df)
 }
+
+
+plot(r_rainfall,y=1)
 
 res_pix <- 480
 col_mfrow <- 1
@@ -250,37 +295,7 @@ dev.off()
 #list_selected_pix: by LOCATION ID
 #
 
-freq_station <- sort(table(data_subset$LOCATION_ID),decreasing=T) # select top 2 stations in term of availability
-list_selected_ID <- names(freq_station)[1:25] #select top 25
-list_selected_ID <- names(freq_station) #select top 25
 
-#View(freq_station)
-
-##This will be a function later on...
-df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
-#list_selected_pix <- 11:14
-list_pix <- vector("list",length=length(list_selected_ID))
-
-#debug(plotting_coliform_and_rainfall)
-#i <- 1
-
-#test <- lapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
-#               df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T)
-
-#Takes 5mintues or less on bpy50 laptop
-num_cores <- 4
-list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
-                    df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T,
-                    mc.preschedule=FALSE,mc.cores= num_cores)
-
-save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",out_suffix,".RData",sep="")))
-
-#l_png_files <- mclapply(1:length(unlist(lf_mean_mosaic)),FUN=plot_mosaic,
-#                        list_param= list_param_plot_mosaic,
-#                        mc.preschedule=FALSE,mc.cores = num_cores)
-
-list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
-data_df <- do.call(rbind,list_cleaning_df)
 #colnames(data_df) <- list_selected_ID
 #data_dz <- zoo(data_dz,idx)
 
