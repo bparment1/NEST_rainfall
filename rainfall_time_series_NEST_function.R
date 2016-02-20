@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 12/11/2015
+#DATE MODIFIED: 02/20/2015
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -321,6 +321,122 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
   station_summary_obj <- list(nb_zero,nb_NA,df2)
   names(station_summary_obj) <- c("nb_zero","nb_NA","df_combined")
   return(station_summary_obj)
+}
+
+df_combined <- combine_stations_data_raster_ts_fun(data,convert_to_inches,in_dir_rst,start_date,end_date,out_dir,out_suffix)
+
+combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rst,start_date,end_date,out_dir,out_suffix){
+  
+  #data
+  #convert_to_inches
+  #in_dir_rst
+  #start_date
+  #end_date
+  #data
+  #year_processed <- "2012" #PARAM 16
+  #threshold_val <- 2*25.4 #PARAM 17, in inches or mm
+  #units_val <- "mm"
+  #out_dir
+  #out_suffix
+  
+  #### Start script ###
+  
+  ## Format the file first
+  dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
+  data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
+  data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
+  data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
+  data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
+  #dim(data)
+  #class(data$LOCATION_ID)
+  data$LOCATION_ID <- as.character(data$LOCATION_ID)
+  #length(unique(data$LOCATION_ID)) #There are 2851 stations
+  
+  r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
+  
+  if (convert_to_inches==TRUE){
+    r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
+  }
+  
+  #### NOW SELECT RELEVANT DATES
+  
+  idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
+  #date_l <- strptime(idx[1], "%Y%m%d") # 
+  dates_l <- format(idx, "%Y%m%d") #  date being processed
+  
+  data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
+  data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
+  
+  #Remote stations without coordinates and make a SPDF
+  #dat_stat$
+  dat_stat <- subset(data_subset, !is.na(LONGITUDE_DECIMAL) & !is.na(LATITUDE_DECIMAL))
+  coords <- dat_stat[,c('LONGITUDE_DECIMAL','LATITUDE_DECIMAL')]
+  coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
+  coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
+  coordinates(dat_stat) <- coords  
+  ## Remove duplicates rows from stations to identify uniques sations
+  dat_stat <- remove.duplicates(dat_stat)
+  proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
+  #Browse[2]> proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
+  #Error in ReplProj4string(obj, CRS(value)) : 
+  #  Geographical CRS given to non-conformant data: 2854 2814
+
+  #dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
+  nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
+  
+  r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
+  
+  #x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean, takes about a minute
+  #raster_name <- paste("day","_","overall_mean",file_format,sep="")
+  #writeRaster(x, file=raster_name,overwrite=T)
+  #plot_to_file(raster_name) #quick plot of raster to disk
+  
+  #x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
+  r_date <- getZ(r_rainfall)
+  
+  ## Plot mosaics for Maine for daily predictions in 2014
+  ## Get pixel time series at centroids of tiles used in the predictions
+  
+  df_ts_pixel <- extract(r_rainfall,dat_stat,df=T,sp=T)
+  test<-merge(df_ts_pixel,data_subset,by="LOCATION_ID")
+  
+  #df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
+  r_ts_name <- names(r_rainfall)
+  #d_z <- zoo(df_ts_pixel,idx) #make a time series .
+  
+  freq_station <- sort(table(data_subset$LOCATION_ID),decreasing=T) # select top 2 stations in term of availability
+  list_selected_ID <- names(freq_station)[1:25] #select top 25
+  list_selected_ID <- names(freq_station) #select top 25
+  
+  #View(freq_station)
+  
+  ##This will be a function later on...
+  df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
+  #list_selected_pix <- 11:14
+  list_pix <- vector("list",length=length(list_selected_ID))
+  
+  #debug(plotting_coliform_and_rainfall)
+  #i <- 1
+  
+  #test <- lapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
+  #               df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T)
+  
+  #Takes 5mintues or less on bpy50 laptop
+  num_cores <- 4
+  list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
+                               df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T,
+                               mc.preschedule=FALSE,mc.cores= num_cores)
+  
+  save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",out_suffix,".RData",sep="")))
+  
+  #l_png_files <- mclapply(1:length(unlist(lf_mean_mosaic)),FUN=plot_mosaic,
+  #                        list_param= list_param_plot_mosaic,
+  #                        mc.preschedule=FALSE,mc.cores = num_cores)
+  
+  list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
+  data_df <- do.call(rbind,list_cleaning_df)
+  
+  return(dat_df)
 }
 
 
