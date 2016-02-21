@@ -43,8 +43,8 @@ library(lubridate)              # date and time handling tools
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functions.R" #PARAM 1
-script_path <- "/home/parmentier/Data/Space_beats_time/sbt_scripts" #path to script #PARAM 2
+#function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functions.R" #PARAM 1
+#script_path <- "/home/parmentier/Data/Space_beats_time/sbt_scripts" #path to script #PARAM 2
 #source(file.path(script_path,function_spatial_regression_analyses)) #source all functions used in this script 1.
 
 format_s <-function(s_ID){
@@ -323,8 +323,6 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
   return(station_summary_obj)
 }
 
-df_combined <- combine_stations_data_raster_ts_fun(data,convert_to_inches,in_dir_rst,start_date,end_date,out_dir,out_suffix)
-
 combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rst,start_date,end_date,out_dir,out_suffix){
   
   #data
@@ -384,7 +382,7 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   #dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
   nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
   
-  r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
+  #r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
   
   #x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean, takes about a minute
   #raster_name <- paste("day","_","overall_mean",file_format,sep="")
@@ -392,7 +390,7 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   #plot_to_file(raster_name) #quick plot of raster to disk
   
   #x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
-  r_date <- getZ(r_rainfall)
+  #r_date <- getZ(r_rainfall)
   
   ## Plot mosaics for Maine for daily predictions in 2014
   ## Get pixel time series at centroids of tiles used in the predictions
