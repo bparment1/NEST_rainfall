@@ -98,7 +98,7 @@ num_cores <- 4 #param 6
 file_format <- ".tif" #param 7
 NA_value <- -9999 # param 8
 NA_flag_val <- NA_value 
-out_suffix <-"NEST_prism_02212016" #output suffix for the files and ouptu folder #param 9
+out_suffix <-"NEST_prism_02212016b" #output suffix for the files and ouptu folder #param 9
 create_out_dir_param=TRUE # param 10
 ref_rast_name <- "/home/bparmentier/Google Drive/NEST/prism_rain/prismrain2012/prismrain_20120101.tif" #param 10
 agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!! #param 11
