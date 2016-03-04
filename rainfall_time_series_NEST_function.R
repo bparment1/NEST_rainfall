@@ -339,16 +339,46 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   
   #### Start script ###
   
+  
   ## Format the file first
-  dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
-  data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
-  data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
-  data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
-  data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
-  #dim(data)
-  #class(data$LOCATION_ID)
-  data$LOCATION_ID <- as.character(data$LOCATION_ID)
-  #length(unique(data$LOCATION_ID)) #There are 2851 stations
+  #data$SAMPLE.DATE
+  #year2to4(13,)
+  #library(chron)
+  #as.Date(chron(as.character(data$TRIP_START_DATE_f[1])), format = "day-month-year"))
+  #as.Date(chron("1-Mar-50", format = "day-month-year"))
+  library(hydrostats)
+  
+  if(data_type=="MH"){
+    #
+    #
+    dates_TRIP_START <- unlist(lapply(strsplit(data$SAMPLE.DATE," "),function(x){x[1][1]}))
+    #dates_TRIP_START <- gsub(" 0:00:00","",data$SAMPLE.DATE)
+    
+    data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
+    data$TRIP_START_DATE_year <- four.digit.year(data$TRIP_START_DATE_f , year=1968)
+    #format(data$TRIP_START_DATE_f , format="%m-%d-%Y")
+    
+    data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
+   
+    data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
+    data$TRIP_START_DATE_f <- paste0(data$TRIP_START_DATE_year,data$TRIP_START_DATE_month,data$TRIP_START_DATE_day)
+    
+    data$TRIP_START_DATE_f <- as.Date(strptime(data$TRIP_START_DATE_f,"%Y%m%d"))
+    #dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
+    #data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
+    #data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
+    #data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
+    #data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
+    
+    
+    #dim(data)
+    #class(data$LOCATION_ID)
+    data$LOCATION_ID <- 1:nrow(data)
+    proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
+    #data$LOCATION_ID <- as.character(data$LOCATION_ID)
+    #length(unique(data$LOCATION_ID)) #There are 2851 stations
+    
+  }
   
   r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
   
@@ -364,17 +394,35 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   
   data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
   data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
+  data_subset[[coord_names[1]]] <- as.numeric(data_subset[[coord_names[1]]])
+  data_subset[[coord_names[2]]] <- as.numeric(data_subset[[coord_names[2]]])
   
   #Remote stations without coordinates and make a SPDF
   #dat_stat$
-  dat_stat <- subset(data_subset, !is.na(LONGITUDE_DECIMAL) & !is.na(LATITUDE_DECIMAL))
-  coords <- dat_stat[,c('LONGITUDE_DECIMAL','LATITUDE_DECIMAL')]
-  coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
-  coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
+  coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
+  #dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
+  dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
+  
+  #coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
+  #coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
+  dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
+  coords <- (dat_stat[,coord_names])
+  #coords[,1] <- as.numeric(coords[,1])
+  #coords[,2] <- as.numeric(coords[,2])
+  coords <- as.matrix(coords)
   coordinates(dat_stat) <- coords  
+
+  if(data_type=="MH"){
+    proj4string(dat_stat) <- proj_str #this is the NAD83 latitude-longitude
+    dat_stat<-spTransform(dat_stat,CRS(CRS_WGS84))     #Project from WGS84 to new coord. system
+    
+  }
+  if(data_type!="MH"){
+    proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
+  }
   ## Remove duplicates rows from stations to identify uniques sations
   dat_stat <- remove.duplicates(dat_stat)
-  proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
+  
   #Browse[2]> proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
   #Error in ReplProj4string(obj, CRS(value)) : 
   #  Geographical CRS given to non-conformant data: 2854 2814
@@ -396,8 +444,8 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   ## Get pixel time series at centroids of tiles used in the predictions
   
   df_ts_pixel <- extract(r_rainfall,dat_stat,df=T,sp=T)
-  test<-merge(df_ts_pixel,data_subset,by="LOCATION_ID")
-  
+  test_tmp <- merge(df_ts_pixel,data_subset,by="LOCATION_ID")
+  df_ts_pixel <- test_tmp
   #df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
   r_ts_name <- names(r_rainfall)
   #d_z <- zoo(df_ts_pixel,idx) #make a time series .
