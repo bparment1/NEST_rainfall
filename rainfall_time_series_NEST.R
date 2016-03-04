@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 02/20/2016
+#DATE MODIFIED: 03/04/2016
 #Version: 2
 #PROJECT: NEST beach closures            
 
@@ -86,12 +86,15 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_02172016" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_03042016" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=TRUE #PARAM8
 num_cores <- 4 #PARAM 9
 
 rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
 station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
+station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST/", "MHB_data_2006-2015.csv") #PARAM 11
+
+
 
 start_date <- "2012-01-01" #PARAM 12
 end_date <- "2012-12-31" #PARAM 13
@@ -123,7 +126,7 @@ list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
 #### Part 1: read in and combine the information ####
 
 data <- read.table(station_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
-data <- read.table(station_data_fname,sep=",",header=T,stringsAsFactors = F) #bacteria measurements
+#data <- read.table(station_data_fname,sep=",",header=T,stringsAsFactors = F) #bacteria measurements
 
 in_dir_rst <- list_dir_rainfall[2]
 
