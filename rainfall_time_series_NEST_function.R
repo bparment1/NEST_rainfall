@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 02/20/2015
+#DATE MODIFIED: 03/10/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -165,7 +165,7 @@ create_polygon_from_extent<-function(reg_ref_rast,outDir=NULL,outSuffix=NULL){
   return(reg_outline_poly) #return spdf
 }
 
-plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID,plot_fig=T){
+plotting_measurements_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID,r_ts_name,var_name,plot_fig=T){
   
   # Input arguments:
   # i : selected station
@@ -184,18 +184,23 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
   
   ### Not get the data from the time series
   data_pixel <- df_ts_pix[id_selected,]
+  data_pixel <- as.data.frame(data_pixel)
+  
   var_pix_ts <- t(as.data.frame(subset(data_pixel,select=var_name)))
   #pix <- t(data_pixel[1,24:388])#can subset to range later
+ 
   pix_ts <- t(as.data.frame(subset(data_pixel,select=r_ts_name))) #can subset to range later
-  
+  pix_ts <- subset(as.data.frame(pix_ts),select=r_ts_name)
   ## Process the coliform data
   
   #there are several measurements per day for some stations !!!
   #id_name <- data_pixel[[var_ID]]
   
-  df_tmp  <-data_subset[data_subset$LOCATION_ID==id_name,]
+  df_tmp  <-data_var[data_var$LOCATION_ID==id_name,]
   #aggregate(df_tmp
-  var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean) #aggregate by date
+  formula_str <- paste(var_name," ~ ","TRIP_START_DATE_f",sep="")
+  #var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean) #aggregate by date
+  var_pix <- aggregate(as.formula(formula_str), data = df_tmp, FUN=mean) #aggregate by date
   #length(unique(test$TRIP_START_DATE_f))
   
   #var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
@@ -211,7 +216,9 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
   df2 <- as.data.frame(d_z2)
   df2$date <- rownames(df2)
   rownames(df2) <- NULL
-  df2$COL_SCORE <- as.numeric(as.character(df2$COL_SCORE))
+  df2[[var_name]] <- as.numeric(as.character(df2[[var_name]]))
+  
+  #df2$COL_SCORE <- as.numeric(as.character(df2$COL_SCORE))
   df2$rainfall <- as.numeric(as.character(df2$rainfall))
   df2$LOCATION_ID <- id_name
     
@@ -236,7 +243,7 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
     
     par(new=TRUE)              # key: ask for new plot without erasing old
     #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
-    plot(df2$COL_SCORE,pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
+    plot(df2[[var_name]],pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
     #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
     legend("topleft",legend=c("stations"), 
            cex=1.2,col="red",pch =10,bty="n")
@@ -258,7 +265,8 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
     abline(h=threshold_val,col="green")
     par(new=TRUE)              # key: ask for new plot without erasing old
     #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
-    plot(log(df2$COL_SCORE),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
+    #plot(log(df2$COL_SCORE),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
+    plot(log(df2[[var_name]]),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
     
     #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
     legend("topleft",legend=c("stations"), 
@@ -280,7 +288,8 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
     png(filename=paste("Figure4_","histogram_coliform_measurements_",year_processed,"_",id_name,"_",out_suffix,".png",sep=""),
         width=col_mfrow*res_pix,height=row_mfrow*res_pix)
     
-    hist_val <- hist(df2$COL_SCORE,main="",xlab="COLIFORM SCORES")
+    hist_val <- hist(df2[[var_name]],main="",xlab="COLIFORM SCORES")
+    #hist_val <- hist(df2$COL_SCORE,main="",xlab="COLIFORM SCORES")
     title(paste("Histrogram of coliform scores for station",id_name,"in",year_processed,sep=" "))
     #abline(v=threshold_val,col="green" )
     legend("topright",legend=c("treshold val"), 
@@ -300,9 +309,11 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
     #    width=col_mfrow*res_pix,height=row_mfrow*res_pix)
     
     plot(df2$rainfall)
-    plot(df2$rainfall,df2$COL_SCORE)
-    plot(df2$rainfall,log(df2$COL_SCORE))
-    plot(log(df2$rainfall),log(df2$COL_SCORE))
+    #plot(df2$rainfall,df2$COL_SCORE)
+    #plot(log(df2$rainfall),log(df2$COL_SCORE))
+    plot(df2$rainfall,df2[[var_name]])
+    plot(df2$rainfall,log(df2[[var_name]]))
+
     
     
   }
@@ -311,7 +322,8 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
   #sum(is.na(df2$rainfall))
   #[1] 0
   nb_zero <- sum((df2$rainfall==0)) #203
-  nb_NA <- sum(is.na(df2$COL_SCORE))
+  #nb_NA <- sum(is.na(df2$COL_SCORE))
+  nb_NA <- sum(is.na(df2[[var_name]]))
   ## Cumulated precip and lag?
   #Keep number of  0 for every year for rainfall
   #summarize by month
@@ -323,8 +335,9 @@ plotting_coliform_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID
   return(station_summary_obj)
 }
 
-combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rst,start_date,end_date,out_dir,out_suffix){
-  
+combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rst,start_date,end_date,data_type="MH",out_dir,out_suffix){
+  #
+  ###Add documentation here...
   #data
   #convert_to_inches
   #in_dir_rst
@@ -338,15 +351,6 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   #out_suffix
   
   #### Start script ###
-  
-  
-  ## Format the file first
-  #data$SAMPLE.DATE
-  #year2to4(13,)
-  #library(chron)
-  #as.Date(chron(as.character(data$TRIP_START_DATE_f[1])), format = "day-month-year"))
-  #as.Date(chron("1-Mar-50", format = "day-month-year"))
-  library(hydrostats)
   
   if(data_type=="MH"){
     #
@@ -388,6 +392,7 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   
   #### NOW SELECT RELEVANT DATES
   
+  coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
   idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
   #date_l <- strptime(idx[1], "%Y%m%d") # 
   dates_l <- format(idx, "%Y%m%d") #  date being processed
@@ -399,7 +404,7 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   
   #Remote stations without coordinates and make a SPDF
   #dat_stat$
-  coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
+
   #dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
   dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
   
@@ -430,22 +435,12 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   #dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
   nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
   
-  #r_rainfall <- setZ(r_rainfall, idx) #for now, this can also be made into a spacetime object
-  
-  #x <- zApply(r_rainfall, by="day",fun=mean,name="overall mean") #overall mean, takes about a minute
-  #raster_name <- paste("day","_","overall_mean",file_format,sep="")
-  #writeRaster(x, file=raster_name,overwrite=T)
-  #plot_to_file(raster_name) #quick plot of raster to disk
-  
-  #x <- zApply(r_rainfall, by=c(1,24),fun=mean,name="overall mean") #overall mean
-  #r_date <- getZ(r_rainfall)
-  
   ## Plot mosaics for Maine for daily predictions in 2014
   ## Get pixel time series at centroids of tiles used in the predictions
   
   df_ts_pixel <- extract(r_rainfall,dat_stat,df=T,sp=T)
-  test_tmp <- merge(df_ts_pixel,data_subset,by="LOCATION_ID")
-  df_ts_pixel <- test_tmp
+  #test_tmp <- merge(df_ts_pixel,data_subset,by="LOCATION_ID")
+  #df_ts_pixel <- test_tmp
   #df_ts_pixel <- cbind(summary_metrics_v,df_ts_pixel)
   r_ts_name <- names(r_rainfall)
   #d_z <- zoo(df_ts_pixel,idx) #make a time series .
@@ -461,16 +456,16 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   #list_selected_pix <- 11:14
   list_pix <- vector("list",length=length(list_selected_ID))
   
-  #debug(plotting_coliform_and_rainfall)
+  debug(plotting_measurements_and_rainfall)
   #i <- 1
   
-  #test <- lapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
-  #               df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T)
+  test <- lapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,
+                 df_ts_pix=df_ts_pix,data_var=data_subset,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,plot_fig=T)
   
   #Takes 5mintues or less on bpy50 laptop
   num_cores <- 4
-  list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_coliform_and_rainfall,
-                               df_ts_pix=df_ts_pix,data_var=data_var,list_selected_ID=list_selected_ID,plot_fig=T,
+  list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,
+                               df_ts_pix=df_ts_pix,data_var=data_subset,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_mame,plot_fig=T,
                                mc.preschedule=FALSE,mc.cores= num_cores)
   
   save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",out_suffix,".RData",sep="")))
