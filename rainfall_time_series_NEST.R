@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 03/09/2016
+#DATE MODIFIED: 03/10/2016
 #Version: 2
 #PROJECT: NEST beach closures            
 
@@ -46,7 +46,7 @@ library(hydrostats)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03092016.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03102016b.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
@@ -87,7 +87,7 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_03092016" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_03102016" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=TRUE #PARAM8
 num_cores <- 4 #PARAM 9
 
@@ -105,8 +105,8 @@ threshold_val <- 2*25.4 #PARAM 17, in inches or mm
 convert_to_inches <- FALSE #PARAM 18
 units_val <- "mm"
 data_type <- "MH" #for Maine beach health
-#
-#
+coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MH beach bacteria dataset
+#coord_names <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #cloroforms beach bacteria dataset
 
 ################# START SCRIPT ###############################
 
@@ -130,16 +130,56 @@ list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
 
 data <- read.table(station_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 #data <- read.table(station_data_fname,sep=",",header=T,stringsAsFactors = F) #bacteria measurements
-
-in_dir_rst <- list_dir_rainfall[2]
+##Need to change here to match to the correct year...
+in_dir_rst <- list_dir_rainfall[11]
 
 #
 #> data <- read.table(station_data_fname,sep=",",header=T) #this is T-mode using cor matrix
 #Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
 #                line 47 did not have 35 elements
+### Before combining data get unique station 
+
+proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
+#data$LOCATION_ID <- as.character(data$LOCATION_ID)
+#length(unique(data$LOCATION_ID)) #There are 2851 stations
+
+##################
+##Make this part a function later on...
+
+### Select unique stations and make a SPDF
+data$FID <- 1:nrow(data)
+data[[coord_names[1]]] <- as.numeric(data[[coord_names[1]]])
+data[[coord_names[2]]] <- as.numeric(data[[coord_names[2]]])
+
+#dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
+dat_stat <- subset(data, !is.na(data[[coord_names[1]]] & !is.na(data[[coord_names[2]]])))
+dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
+
+#coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
+#coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
+#this needs to be changed to be general!!
+#dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
+coords <- (dat_stat[,coord_names])
+#coords[,1] <- as.numeric(coords[,1])
+#coords[,2] <- as.numeric(coords[,2])
+coords <- as.matrix(coords)
+coordinates(dat_stat) <- coords  
+
+if(data_type=="MH"){
+  proj4string(dat_stat) <- proj_str #this is the NAD83 latitude-longitude
+  dat_stat<-spTransform(dat_stat,CRS(CRS_WGS84))     #Project from WGS84 to new coord. system
+  
+}
+if(data_type!="MH"){
+  proj4string(dat_stat) <- CRS_WGS84 #this is the NAD83 latitude-longitude
+}
+## Remove duplicates rows from stations to identify uniques sations
+dat_stat <- remove.duplicates(dat_stat)
+dat_stat$LOCATION_ID <- 1:nrow(dat_stat)  
+data$FID <- 1:nrow(data)
 
 debug(combine_stations_data_raster_ts_fun)
-df_combined <- combine_stations_data_raster_ts_fun(data,convert_to_inches,in_dir_rst,start_date,end_date,out_dir,out_suffix)
+df_combined <- combine_stations_data_raster_ts_fun(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix)
 
 
 ###### Part 2: plot information ####
