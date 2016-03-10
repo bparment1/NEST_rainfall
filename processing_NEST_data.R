@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 02/21/2016
+#DATE MODIFIED: 03/10/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -90,15 +90,15 @@ in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
 out_dir <- "/home/bparmentier/Google Drive/NEST/" #param 2
 
-start_date <- "2015-01-01" # param 3
-end_date <- "2015-12-31" # param 4
+start_date <- "2016-01-01" # param 3
+end_date <- "2016-03-09" # param 4
 
 var_name <- "ppt" #tmin,tmax #param 5
 num_cores <- 4 #param 6
 file_format <- ".tif" #param 7
 NA_value <- -9999 # param 8
 NA_flag_val <- NA_value 
-out_suffix <-"NEST_prism_02212016b" #output suffix for the files and ouptu folder #param 9
+out_suffix <-"NEST_prism_03102016" #output suffix for the files and ouptu folder #param 9
 create_out_dir_param=TRUE # param 10
 ref_rast_name <- "/home/bparmentier/Google Drive/NEST/prism_rain/prismrain2012/prismrain_20120101.tif" #param 10
 agg_param <- c(FALSE,NULL,"mean") #False means there is no aggregation!!! #param 11
