@@ -190,18 +190,24 @@ plotting_measurements_and_rainfall <- function(i,df_ts_pix,data_var,list_selecte
   #pix <- t(data_pixel[1,24:388])#can subset to range later
  
   pix_ts <- t(as.data.frame(subset(data_pixel,select=r_ts_name))) #can subset to range later
-  pix_ts <- subset(as.data.frame(pix_ts),select=r_ts_name)
+  #pix_ts <- subset(as.data.frame(pix_ts),select=r_ts_name)
+  pix_ts <- (as.data.frame(pix_ts))
   ## Process the coliform data
   
   #there are several measurements per day for some stations !!!
   #id_name <- data_pixel[[var_ID]]
   
-  df_tmp  <-data_var[data_var$LOCATION_ID==id_name,]
+  #df_tmp  <-data_var[data_var$LOCATION_ID==id_name,]
+  df_tmp <- subset(data_var,data_var$LOCATION_ID==id_name)
   #aggregate(df_tmp
-  formula_str <- paste(var_name," ~ ","TRIP_START_DATE_f",sep="")
-  #var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean) #aggregate by date
-  var_pix <- aggregate(as.formula(formula_str), data = df_tmp, FUN=mean) #aggregate by date
-  #length(unique(test$TRIP_START_DATE_f))
+  if(nrow(df_tmp)>1){
+    
+    formula_str <- paste(var_name," ~ ","TRIP_START_DATE_f",sep="")
+    #var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean) #aggregate by date
+    var_pix <- aggregate(as.formula(formula_str), data = df_tmp, FUN=mean) #aggregate by date
+    #length(unique(test$TRIP_START_DATE_f))
+    
+  }
   
   #var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
   
@@ -335,10 +341,13 @@ plotting_measurements_and_rainfall <- function(i,df_ts_pix,data_var,list_selecte
   return(station_summary_obj)
 }
 
-combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rst,start_date,end_date,data_type="MH",out_dir,out_suffix){
+combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix){
+  #data,convert_to_inches,in_dir_rst,start_date,end_date,data_type="MH",coord_names,out_dir,out_suffix
+  #data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix  
   #
   ###Add documentation here...
   #data
+  #dat_stat: unique station data
   #convert_to_inches
   #in_dir_rst
   #start_date
@@ -374,13 +383,9 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
     #data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
     #data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
     
-    
-    #dim(data)
-    #class(data$LOCATION_ID)
-    data$LOCATION_ID <- 1:nrow(data)
-    proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
-    #data$LOCATION_ID <- as.character(data$LOCATION_ID)
-    #length(unique(data$LOCATION_ID)) #There are 2851 stations
+    #Browse[2]> proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
+    #Error in ReplProj4string(obj, CRS(value)) : 
+    #  Geographical CRS given to non-conformant data: 2854 2814
     
   }
   
@@ -392,45 +397,17 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   
   #### NOW SELECT RELEVANT DATES
   
-  coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
+  #coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
   idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
   #date_l <- strptime(idx[1], "%Y%m%d") # 
   dates_l <- format(idx, "%Y%m%d") #  date being processed
   
+  ###Get the relevant dates from the original dataset
   data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
-  data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
+  #data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
   data_subset[[coord_names[1]]] <- as.numeric(data_subset[[coord_names[1]]])
   data_subset[[coord_names[2]]] <- as.numeric(data_subset[[coord_names[2]]])
   
-  #Remote stations without coordinates and make a SPDF
-  #dat_stat$
-
-  #dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
-  dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
-  
-  #coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
-  #coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
-  dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
-  coords <- (dat_stat[,coord_names])
-  #coords[,1] <- as.numeric(coords[,1])
-  #coords[,2] <- as.numeric(coords[,2])
-  coords <- as.matrix(coords)
-  coordinates(dat_stat) <- coords  
-
-  if(data_type=="MH"){
-    proj4string(dat_stat) <- proj_str #this is the NAD83 latitude-longitude
-    dat_stat<-spTransform(dat_stat,CRS(CRS_WGS84))     #Project from WGS84 to new coord. system
-    
-  }
-  if(data_type!="MH"){
-    proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
-  }
-  ## Remove duplicates rows from stations to identify uniques sations
-  dat_stat <- remove.duplicates(dat_stat)
-  
-  #Browse[2]> proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
-  #Error in ReplProj4string(obj, CRS(value)) : 
-  #  Geographical CRS given to non-conformant data: 2854 2814
 
   #dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
   nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
@@ -445,15 +422,18 @@ combine_stations_data_raster_ts_fun <- function(data,convert_to_inches,in_dir_rs
   r_ts_name <- names(r_rainfall)
   #d_z <- zoo(df_ts_pixel,idx) #make a time series .
   
-  freq_station <- sort(table(data_subset$LOCATION_ID),decreasing=T) # select top 2 stations in term of availability
-  list_selected_ID <- names(freq_station)[1:25] #select top 25
-  list_selected_ID <- names(freq_station) #select top 25
+  #freq_station <- sort(table(data_subset$LOCATION_ID),decreasing=T) # select top 2 stations in term of availability
+  #list_selected_ID <- names(freq_station)[1:25] #select top 25
+  #list_selected_ID <- names(freq_station) #select top 25
   
   #View(freq_station)
   
   ##This will be a function later on...
   df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
   #list_selected_pix <- 11:14
+  
+  list_selected_ID <- unique(data_subset$LOCATION_ID)
+  #list_selected_ID <- df_ts_pix$LOCATION_ID
   list_pix <- vector("list",length=length(list_selected_ID))
   
   debug(plotting_measurements_and_rainfall)
