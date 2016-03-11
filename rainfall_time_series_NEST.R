@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 03/10/2016
+#DATE MODIFIED: 03/11/2016
 #Version: 2
 #PROJECT: NEST beach closures            
 
@@ -46,7 +46,7 @@ library(hydrostats)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03102016b.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03112016.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
@@ -129,6 +129,7 @@ list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
 #### Part 1: read in and combine the information ####
 
 data <- read.table(station_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
+data$FID <- 1:nrow(data)
 #data <- read.table(station_data_fname,sep=",",header=T,stringsAsFactors = F) #bacteria measurements
 ##Need to change here to match to the correct year...
 in_dir_rst <- list_dir_rainfall[11]
@@ -147,7 +148,7 @@ proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #Th
 ##Make this part a function later on...
 
 ### Select unique stations and make a SPDF
-data$FID <- 1:nrow(data)
+#data$FID <- 1:nrow(data)
 data[[coord_names[1]]] <- as.numeric(data[[coord_names[1]]])
 data[[coord_names[2]]] <- as.numeric(data[[coord_names[2]]])
 
@@ -176,7 +177,7 @@ if(data_type!="MH"){
 ## Remove duplicates rows from stations to identify uniques sations
 dat_stat <- remove.duplicates(dat_stat)
 dat_stat$LOCATION_ID <- 1:nrow(dat_stat)  
-data$FID <- 1:nrow(data)
+
 
 debug(combine_stations_data_raster_ts_fun)
 df_combined <- combine_stations_data_raster_ts_fun(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix)
