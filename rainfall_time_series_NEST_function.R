@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 03/10/2016
+#DATE MODIFIED: 03/11/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -165,7 +165,7 @@ create_polygon_from_extent<-function(reg_ref_rast,outDir=NULL,outSuffix=NULL){
   return(reg_outline_poly) #return spdf
 }
 
-plotting_measurements_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID,r_ts_name,var_name,plot_fig=T){
+plotting_measurements_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID,r_ts_name,var_name,dates_str,plot_fig=T){
   
   # Input arguments:
   # i : selected station
@@ -395,20 +395,6 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
     r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
   }
   
-  #### NOW SELECT RELEVANT DATES
-  
-  #coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
-  idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
-  #date_l <- strptime(idx[1], "%Y%m%d") # 
-  dates_l <- format(idx, "%Y%m%d") #  date being processed
-  
-  ###Get the relevant dates from the original dataset
-  data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
-  #data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
-  data_subset[[coord_names[1]]] <- as.numeric(data_subset[[coord_names[1]]])
-  data_subset[[coord_names[2]]] <- as.numeric(data_subset[[coord_names[2]]])
-  
-
   #dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
   nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
   
@@ -432,15 +418,34 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
   #list_selected_pix <- 11:14
   
+  test <- merge(dat_stat,data_subset,by="FID")
+  test2 <- merge(data_subset,dat_stat,by="FID")
+  
+  #### NOW SELECT RELEVANT DATES
+  
+  #coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
+  idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
+  #date_l <- strptime(idx[1], "%Y%m%d") # 
+  dates_l <- format(idx, "%Y%m%d") #  date being processed
+  
+  ###Get the relevant dates from the original dataset
+  data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
+  #data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
+  data_subset[[coord_names[1]]] <- as.numeric(data_subset[[coord_names[1]]])
+  data_subset[[coord_names[2]]] <- as.numeric(data_subset[[coord_names[2]]])
+  
+  
+  
   list_selected_ID <- unique(data_subset$LOCATION_ID)
   #list_selected_ID <- df_ts_pix$LOCATION_ID
+  
   list_pix <- vector("list",length=length(list_selected_ID))
   
   debug(plotting_measurements_and_rainfall)
   #i <- 1
   
   test <- lapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,
-                 df_ts_pix=df_ts_pix,data_var=data_subset,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,plot_fig=T)
+                 df_ts_pix=df_ts_pix,data_var=data_subset,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_str,plot_fig=T)
   
   #Takes 5mintues or less on bpy50 laptop
   num_cores <- 4
