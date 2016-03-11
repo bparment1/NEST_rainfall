@@ -30,20 +30,24 @@ shinyServer(function(input, output) {
   ## Process the coliform data
   d_z <- zoo(pix_ts,idx) #make a time series ...
   names(d_z)<- "rainfall"
-  output$plot <- renderPlot({
-    data <- getSymbols(input$symb, src = "yahoo", 
-                       from = input$dates[1],
-                       to = input$dates[2],
-                       auto.assign = FALSE)
-  plot_ts <- plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
-  # Generate a summary of the dataset
-  output$summary <- renderPrint({
-    dataset <- datasetInput()
-    summary(dataset)
+  
+  output$plot_ts <- renderPlot({
+    input$newplot
+    # Add a little noise to the cars data
+    #cars2 <- cars + rnorm(nrow(cars))
+    #plot(cars2)
+    #plot_ts <- 
+    plot(d_z,lty=2,ylab="rainfall",xlab="Time",main="")
   })
+
+  # Generate a summary of the dataset
+  #output$summary <- renderPrint({
+  #  dataset <- datasetInput()
+  #  summary(dataset)
+  #})
   
   # Show the first "n" observations
-  output$view <- renderTable({
-    head(datasetInput(), n = input$obs)
-  })
+  #output$view <- renderTable({
+  #  head(datasetInput(), n = input$obs)
+  #})
 })
