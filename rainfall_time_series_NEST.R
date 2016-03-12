@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 03/11/2016
+#DATE MODIFIED: 03/12/2016
 #Version: 2
 #PROJECT: NEST beach closures            
 
@@ -46,7 +46,7 @@ library(hydrostats)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03112016.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03122016.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
