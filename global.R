@@ -147,3 +147,42 @@ idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
 #date_l <- strptime(idx[1], "%Y%m%d") # 
 dates_l <- format(idx, "%Y%m%d") #  date being processed
 
+proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
+#data$LOCATION_ID <- as.character(data$LOCATION_ID)
+#length(unique(data$LOCATION_ID)) #There are 2851 stations
+
+##################
+##Make this part a function later on...
+
+### Select unique stations and make a SPDF
+#data$FID <- 1:nrow(data)
+data[[coord_names[1]]] <- as.numeric(data[[coord_names[1]]])
+data[[coord_names[2]]] <- as.numeric(data[[coord_names[2]]])
+
+#dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
+dat_stat <- subset(data, !is.na(data[[coord_names[1]]] & !is.na(data[[coord_names[2]]])))
+dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
+
+#coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
+#coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
+#this needs to be changed to be general!!
+#dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
+coords <- (dat_stat[,coord_names])
+#coords[,1] <- as.numeric(coords[,1])
+#coords[,2] <- as.numeric(coords[,2])
+coords <- as.matrix(coords)
+coordinates(dat_stat) <- coords  
+
+if(data_type=="MH"){
+  proj4string(dat_stat) <- proj_str #this is the NAD83 latitude-longitude
+  dat_stat<-spTransform(dat_stat,CRS(CRS_WGS84))     #Project from WGS84 to new coord. system
+  
+}
+if(data_type!="MH"){
+  proj4string(dat_stat) <- CRS_WGS84 #this is the NAD83 latitude-longitude
+}
+## Remove duplicates rows from stations to identify uniques sations
+dat_stat <- remove.duplicates(dat_stat)
+dat_stat$LOCATION_ID <- 1:nrow(dat_stat)  
+
+########################### End of script #####################################
