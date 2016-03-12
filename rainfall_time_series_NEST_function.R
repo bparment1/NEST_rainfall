@@ -417,9 +417,9 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   ##This will be a function later on...
   df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
   #list_selected_pix <- 11:14
-  
-  test <- merge(dat_stat,data_subset,by="FID")
-  test2 <- merge(data_subset,dat_stat,by="FID")
+  write.table(df_ts_pix,paste("df_ts_pix_","2012.txt",sep=""))
+  #test <- merge(dat_stat,data,by="FID")
+ data_merged <- merge(data,dat_stat,by="FID",all=T,suffixes=c("_x","_y"))
   
   #### NOW SELECT RELEVANT DATES
   
@@ -429,11 +429,10 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   dates_l <- format(idx, "%Y%m%d") #  date being processed
   
   ###Get the relevant dates from the original dataset
-  data_subset <- data[data$TRIP_START_DATE_f >= as.Date(start_date) & data$TRIP_START_DATE_f <= as.Date(end_date), ]
+  data_subset <- data_merged[data_merged$TRIP_START_DATE_f >= as.Date(start_date) & data_merged$TRIP_START_DATE_f <= as.Date(end_date), ]
   #data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
   data_subset[[coord_names[1]]] <- as.numeric(data_subset[[coord_names[1]]])
   data_subset[[coord_names[2]]] <- as.numeric(data_subset[[coord_names[2]]])
-  
   
   
   list_selected_ID <- unique(data_subset$LOCATION_ID)
