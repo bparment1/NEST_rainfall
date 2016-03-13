@@ -1,3 +1,20 @@
+##############################################  NEST Beach closure project  #######################################
+###########################################  SHINY APP #######################################
+#This script is the server side for the Shiny app to explore rainfall and bacteria measurements.
+
+#AUTHORS: Benoit Parmentier                                             
+#DATE CREATED: 03/12/2016 
+#DATE MODIFIED: 03/13/2016
+#Version: 1
+#PROJECT: NEST beach closures            
+
+#
+#COMMENTS: -   
+#          - 
+#TO DO:
+#
+#################################################################################################
+
 library(shiny)
 library(datasets)
 
@@ -14,7 +31,7 @@ shinyServer(function(input, output) {
   #})
   #var_ID <- "LOCATION_ID"
 
-  
+  ## First prepare plot for the station profile!!
   output$plot_ts <- renderPlot({
     input$newplot
     # Add a little noise to the cars data
@@ -39,6 +56,19 @@ shinyServer(function(input, output) {
     d_z <- zoo(pix_ts,idx) #make a time series ...
     names(d_z)<- "rainfall"
     plot(d_z,lty=2,ylab="rainfall",xlab="Time",main=paste0("Rainfall for station ",id_name))
+  })
+  
+  output$raster_map <- renderPlot({
+    #if (input$date_in == "Map1")
+    #  data <- raster("file1.asc")
+    #else if (input$variable == "Map2")
+    #  data <- raster("file2.asc")
+    #levelplot(data, margin=FALSE, par.settings=GrTheme)
+    plot(r_rainfall,y=1,ext=extent(dat_stat),main=paste0("Raster image for ",idx[1]))
+    plot(dat_stat,add=T,pch=3)
+    text(dat_stat,dat_stat$LOCATION_ID,cex=1.4)
+    legend("topright",legend=c("stations"), 
+           cex=1.2, col="black",pch =3,bty="n")
   })
 
   # Generate a summary of the dataset
