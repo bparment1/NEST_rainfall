@@ -41,7 +41,7 @@ shinyUI(fluidPage(
       #            choices = c("rock", "pressure", "cars")),
       selectInput("station", "Choose a station:", 
                   choices = data_df$LOCATION_ID),   
-      numericInput("obs", "Number of observations to view:", 10),
+      #numericInput("obs", "Number of observations to view:", 10),
       
       helpText("Note: the plot will show the specified",
                "station profile based on rainfall", 
@@ -52,18 +52,21 @@ shinyUI(fluidPage(
       
       submitButton("Update View")
     ),
+    mainPanel(
+      plotOutput("plot_ts")
+    ),
     
     # Show a summary of the dataset and an HTML table with the
     # requested number of observations. Note the use of the h4
     # function to provide an additional header above each output
     # section.
-    mainPanel(
-      h4("Summary"),
-      verbatimTextOutput("summary"),
-      
-      h4("Observations"),
-      tableOutput("view")
-    )
+    #mainPanel(
+    #  h4("Summary"),
+    #  verbatimTextOutput("summary"),
+    #  
+    #  h4("Observations"),
+    # tableOutput("view")
+    #)
   )
 ))
 
