@@ -1,11 +1,11 @@
 ##############################################  NEST Beach closure project  #######################################
 #################################  Shiny Application for exploration of station measurements  #######################################
 #This script explores the correlation between rainfall events and beach closures due to bacteria outbreaks in Maine.
-#The script uses time series analyes from R. 
+#This script is the client, user interface side of the shiny app.
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 03/11/2016
+#DATE MODIFIED: 03/13/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -25,7 +25,7 @@ library(shiny)
 shinyUI(fluidPage(
   
   # Application title.
-  titlePanel("More Widgets"),
+  titlePanel("Station Measurements"),
   
   # Sidebar with controls to select a dataset and specify the
   # number of observations to view. The helpText function is
@@ -36,6 +36,7 @@ shinyUI(fluidPage(
   # the computations required to render output are inordinately
   # time-consuming.
   sidebarLayout(
+    
     sidebarPanel(
       #selectInput("dataset", "Choose a dataset:", 
       #            choices = c("rock", "pressure", "cars")),
@@ -52,8 +53,10 @@ shinyUI(fluidPage(
       
       submitButton("Update View")
     ),
+    
     mainPanel(
-      plotOutput("plot_ts")
+      plotOutput("plot_ts"),
+      plotOutput("raster_map")
     ),
     
     # Show a summary of the dataset and an HTML table with the
