@@ -49,7 +49,8 @@ library(shiny)
 ###### Functions used in this script sourced from other files
 
 function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03122016.R" #PARAM 1
-script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
+#script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
+script_path <- "." #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
 
@@ -78,6 +79,7 @@ load_obj <- function(f){
 #####  Parameters and argument set up ###########
 
 in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
+in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s02"
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
 #in_dir_rainfall <- "/home/bparmentier/Google Drive/NEST_Data/"
 
@@ -89,7 +91,7 @@ file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
 out_suffix <-"NEST_prism_03102016" #output suffix for the files and ouptu folder #PARAM 7
-create_out_dir_param=TRUE #PARAM8
+create_out_dir_param=FALSE #PARAM8
 num_cores <- 4 #PARAM 9
 
 rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
@@ -108,7 +110,7 @@ units_val <- "mm"
 data_type <- "MH" #for Maine beach health
 coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MH beach bacteria dataset
 #coord_names <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #cloroforms beach bacteria dataset
-data_df_fname <- "/home/bparmentier/Google Drive/shiny_test/NEST_stations_s01/df_ts_pix_2012.txt"
+data_df_fname <- "./data/df_ts_pix_2012.txt"
 
 ################# START SCRIPT ###############################
 
