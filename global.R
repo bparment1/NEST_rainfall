@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 03/11/2016
+#DATE MODIFIED: 03/22/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -81,7 +81,7 @@ load_obj <- function(f){
 
 #####  Parameters and argument set up ###########
 
-in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
+#in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
 in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
 #in_dir_rainfall <- "/home/bparmentier/Google Drive/NEST_Data/"
@@ -97,7 +97,7 @@ out_suffix <-"NEST_prism_03102016" #output suffix for the files and ouptu folder
 create_out_dir_param=FALSE #PARAM8
 num_cores <- 4 #PARAM 9
 
-rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
+#rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
 rainfall_dir <- "./data" #PARAM 10
 #station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
 station_data_fname <- file.path("data", "MHB_data_2006-2015.csv") #PARAM 11
@@ -119,6 +119,7 @@ data_df_fname <- "./data/df_ts_pix_2012.txt"
 
 SMAZones_fname <- "SMAZoneDissolve.shp"
 
+
 ################# START SCRIPT ###############################
 
 ### PART I READ AND PREPARE DATA FOR REGRESSIONS #######
@@ -127,12 +128,14 @@ SMAZones_fname <- "SMAZoneDissolve.shp"
 
 out_dir <- in_dir #output will be created in the input dir
 out_suffix_s <- out_suffix #can modify name of output suffix
+setwd(in_dir)
 #if(create_out_dir_param==TRUE){
 #  out_dir <- create_dir_fun(out_dir,out_suffix_s)
 #  setwd(out_dir)
 #}else{
 #  setwd(out_dir) #use previoulsy defined directory
 #}
+SMAZones <- readOGR("./data",sub(".shp","",SMAZones_fname))
 
 list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
 #remove non relevant directories
@@ -194,4 +197,14 @@ if(data_type!="MH"){
 dat_stat <- remove.duplicates(dat_stat)
 dat_stat$LOCATION_ID <- 1:nrow(dat_stat)  
 
+
+#zonal()
+
+test <- over( SMAZones , ind_adm , fn = NULL) 
+test <- over( data_df  , SMAZones , fn = NULL) 
+
 ########################### End of script #####################################
+
+
+#http://shiny.rstudio.com/tutorial/lesson7/
+#http://shiny.rstudio.com/articles/shinyapps.html
