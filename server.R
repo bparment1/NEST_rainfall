@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/12/2016 
-#DATE MODIFIED: 03/13/2016
+#DATE MODIFIED: 03/25/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -69,6 +69,13 @@ shinyServer(function(input, output) {
     text(dat_stat,dat_stat$LOCATION_ID,cex=1.4)
     legend("topright",legend=c("stations"), 
            cex=1.2, col="black",pch =3,bty="n")
+  })
+  
+  dataInput <- reactive({
+    getSymbols(input$symb, src = "yahoo", 
+               from = input$dates[1],
+               to = input$dates[2],
+               auto.assign = FALSE)
   })
 
   # Generate a summary of the dataset
