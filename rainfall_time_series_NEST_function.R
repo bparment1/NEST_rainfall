@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 03/11/2016
+#DATE MODIFIED: 03/25/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -165,7 +165,7 @@ create_polygon_from_extent<-function(reg_ref_rast,outDir=NULL,outSuffix=NULL){
   return(reg_outline_poly) #return spdf
 }
 
-plotting_measurements_and_rainfall <- function(i,df_ts_pix,data_var,list_selected_ID,r_ts_name,var_name,dates_str,plot_fig=T){
+plotting_measurements_and_rainfall <- function(i,dates_val,df_ts_pix,data_var,list_selected_ID,r_ts_name,var_name,dates_str,plot_fig=T){
   
   # Input arguments:
   # i : selected station
@@ -186,8 +186,6 @@ plotting_measurements_and_rainfall <- function(i,df_ts_pix,data_var,list_selecte
   data_pixel <- df_ts_pix[id_selected,]
   data_pixel <- as.data.frame(data_pixel)
   
-  var_pix_ts <- t(as.data.frame(subset(data_pixel,select=var_name)))
-  #pix <- t(data_pixel[1,24:388])#can subset to range later
  
   pix_ts <- t(as.data.frame(subset(data_pixel,select=r_ts_name))) #can subset to range later
   #pix_ts <- subset(as.data.frame(pix_ts),select=r_ts_name)
@@ -206,17 +204,23 @@ plotting_measurements_and_rainfall <- function(i,df_ts_pix,data_var,list_selecte
     #var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean) #aggregate by date
     var_pix <- aggregate(as.formula(formula_str), data = df_tmp, FUN=mean) #aggregate by date
     #length(unique(test$TRIP_START_DATE_f))
-    
+    #var_pix_ts <- t(as.data.frame(subset(data_pixel,select=var_name)))
+    #pix <- t(data_pixel[1,24:388])#can subset to range later
   }
   
   #var_pix <- subset(as.data.frame(data_subset[id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
   
-  d_z <- zoo(pix_ts,idx) #make a time series ...
+  #Create time series object from extract pixel time series
+  d_z <- zoo(pix_ts,dates_val) #make a time series ...
   names(d_z)<- "rainfall"
+  #Create date object for data from stations
   d_var <- zoo(var_pix,var_pix$TRIP_START_DATE_f)
   #plot(d_var,pch=10)
   
   d_z2 <- merge(d_z,d_var)
+  ##Now subset?
+  d_z2 <- window(d_z2,start=dates_val[1],end=dates_val[length(dates_val)])
+  
   d_z2$TRIP_START_DATE_f <- NULL
   
   df2 <- as.data.frame(d_z2)
@@ -361,7 +365,7 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   
   #### Start script ###
   
-  if(data_type=="MH"){
+  if(data_type=="MHB"){
     #
     #
     dates_TRIP_START <- unlist(lapply(strsplit(data$SAMPLE.DATE," "),function(x){x[1][1]}))
@@ -396,7 +400,7 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   }
   
   #dat_stat$LOCATION_ID <- as.character(dat_stat$LOCATION_ID)
-  nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
+  #nrow(dat_stat)==length(unique(dat_stat$LOCATION_ID)) #Checking that we have a unique identifier for each station
   
   ## Plot mosaics for Maine for daily predictions in 2014
   ## Get pixel time series at centroids of tiles used in the predictions
@@ -417,25 +421,32 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   ##This will be a function later on...
   df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
   #list_selected_pix <- 11:14
-  write.table(df_ts_pix,paste("df_ts_pix_","2012.txt",sep=""))
+  year_processed <- year(start_date)
+  write.table(df_ts_pix,paste("df_ts_pix_",year_processed,".txt",sep=""))
   #test <- merge(dat_stat,data,by="FID")
- data_merged <- merge(data,dat_stat,by="FID",all=T,suffixes=c("_x","_y"))
+  #data_merged <- merge(data,dat_stat,by="FID",all=T,suffixes=c("_x","_y"))
+  #data_merged <- merge(data,dat_stat,by="i",all=T,suffixes=c("","_y"))
   
+  data_merged <- merge(data,dat_stat,by="ID_stat",all=T,suffixes=c("","_y"))
+  #data_merged <- data
   #### NOW SELECT RELEVANT DATES
-  
+  #need to figure out the join!!
+  #paste(coord_names_tmp,"_y"), drop all the y
+  #data$id_test <- paste(data[[coord_names[1]]],data[[coord_names[2]]],sep="_")
   #coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
-  idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
+  dates_val <- seq(as.Date(start_date), as.Date(end_date), 'day')
   #date_l <- strptime(idx[1], "%Y%m%d") # 
   dates_l <- format(idx, "%Y%m%d") #  date being processed
   
   ###Get the relevant dates from the original dataset
-  data_subset <- data_merged[data_merged$TRIP_START_DATE_f >= as.Date(start_date) & data_merged$TRIP_START_DATE_f <= as.Date(end_date), ]
+  #data_subset <- data_merged[data_merged$TRIP_START_DATE_f >= as.Date(start_date) & data_merged$TRIP_START_DATE_f <= as.Date(end_date), ]
   #data_subset$LOCATION_ID <- as.character(data_subset$LOCATION_ID)
-  data_subset[[coord_names[1]]] <- as.numeric(data_subset[[coord_names[1]]])
-  data_subset[[coord_names[2]]] <- as.numeric(data_subset[[coord_names[2]]])
+  #data_subset[[coord_names[1]]] <- as.numeric(data_subset[[coord_names[1]]])
+  #data_subset[[coord_names[2]]] <- as.numeric(data_subset[[coord_names[2]]])
   
+  #list_selected_ID <- unique(data_subset$LOCATION_ID)
+  list_selected_ID <- unique(data_merged$LOCATION_ID)
   
-  list_selected_ID <- unique(data_subset$LOCATION_ID)
   #list_selected_ID <- df_ts_pix$LOCATION_ID
   
   list_pix <- vector("list",length=length(list_selected_ID))
@@ -444,7 +455,11 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   #i <- 1
   
   test <- lapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,
-                 df_ts_pix=df_ts_pix,data_var=data_subset,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_str,plot_fig=T)
+                 df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_str,plot_fig=F)
+  
+  
+  test <- lapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,dates_val,
+                 df_ts_pix=df_ts_pix,data_var=data_subset,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_str,plot_fig=F)
   
   #Takes 5mintues or less on bpy50 laptop
   num_cores <- 4
