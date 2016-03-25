@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 03/22/2016
+#DATE MODIFIED: 03/25/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -52,7 +52,8 @@ function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functi
 #script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
 script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02" #path to script #PARAM 
-script_path <- "." #path to script #PARAM 
+setwd(script_path)
+#script_path <- "." #path to script #PARAM 
 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
@@ -138,12 +139,15 @@ setwd(in_dir)
 SMAZones <- readOGR("./data",sub(".shp","",SMAZones_fname))
 
 list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
+
 #remove non relevant directories
 
 #### Part 1: read in and combine the information ####
 
 data <- read.table(station_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 data$FID <- 1:nrow(data)
+
+##Find which date we have
 
 in_dir_rst <- list_dir_rainfall[11]
 r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
