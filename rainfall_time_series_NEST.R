@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 03/12/2016
+#DATE MODIFIED: 03/25/2016
 #Version: 2
 #PROJECT: NEST beach closures            
 
@@ -46,7 +46,7 @@ library(hydrostats)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03122016.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03252016.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
@@ -87,7 +87,7 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_03102016" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_03252016" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=TRUE #PARAM8
 num_cores <- 4 #PARAM 9
 
@@ -95,18 +95,25 @@ rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
 station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
 station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST/", "MHB_data_2006-2015.csv") #PARAM 11
 
+years_to_process <- 2003:2016
 start_date <- "2012-01-01" #PARAM 12
-end_date <- "2012-12-31" #PARAM 13
+end_date <- "2012-12-31" #PARAM 13 #should process by year!!!
 #var_name <- "COL_SCORE" #PARAM 14
 var_name <- "CONCENTRATION" #PARAM 14, MH data
 var_ID <- "LOCATION_ID" #PARAM 15
+var_ID <- NULL #PARAM 15 if null then create a new ID for stations!!
 year_processed <- "2012" #PARAM 16
 threshold_val <- 2*25.4 #PARAM 17, in inches or mm
 convert_to_inches <- FALSE #PARAM 18
 units_val <- "mm"
-data_type <- "MH" #for Maine beach health
+data_type <- "MHB" #for Maine Healthy Beaches
+#data_type <- "DMR" #for Maine Department of Marine Resources
+
 coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MH beach bacteria dataset
 #coord_names <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #cloroforms beach bacteria dataset
+
+SMAZones_fname <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s02/data/SMAZoneDissolve.shp"
+SMAZones <- readOGR(dirname(SMAZones_fname),sub(".shp","",basename(SMAZones_fname)))
 
 ################# START SCRIPT ###############################
 
@@ -124,23 +131,22 @@ if(create_out_dir_param==TRUE){
 }
 
 list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
+list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
+
 #remove non relevant directories
 
 #### Part 1: read in and combine the information ####
 
 data <- read.table(station_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 data$FID <- 1:nrow(data)
-#data <- read.table(station_data_fname,sep=",",header=T,stringsAsFactors = F) #bacteria measurements
-##Need to change here to match to the correct year...
-in_dir_rst <- list_dir_rainfall[11]
+#data$ID <- paste(data[[coord_names[1]]],data[[coord_names[2]]],sep="_")
 
-#
+#data <- read.table(station_data_fname,sep=",",header=T,stringsAsFactors = F) #bacteria measurements
 #> data <- read.table(station_data_fname,sep=",",header=T) #this is T-mode using cor matrix
 #Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
 #                line 47 did not have 35 elements
 ### Before combining data get unique station 
 
-proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
 #data$LOCATION_ID <- as.character(data$LOCATION_ID)
 #length(unique(data$LOCATION_ID)) #There are 2851 stations
 
@@ -151,11 +157,30 @@ proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #Th
 #data$FID <- 1:nrow(data)
 data[[coord_names[1]]] <- as.numeric(data[[coord_names[1]]])
 data[[coord_names[2]]] <- as.numeric(data[[coord_names[2]]])
+data <- subset(data, !is.na(data[[coord_names[1]]]) & !is.na(data[[coord_names[2]]]))
+data$id_coord <- paste(data[[coord_names[1]]],data[[coord_names[2]]],sep="_")
 
-#dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
-dat_stat <- subset(data, !is.na(data[[coord_names[1]]] & !is.na(data[[coord_names[2]]])))
-dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
+## Remove duplicates rows from stations to identify uniques sations
 
+id_coord <- unique(data$id_coord)
+ID_stat <- 1:length(id_coord)
+dat_ID <- data.frame(id_coord,ID_stat)
+data <- merge(data,dat_ID,by="id_coord",all=T,suffixes=c("","_y"))
+#data_merged <- merge(data,dat_stat,by="FID",all=T,suffixes=c("","_y"))
+coords <- data[,coord_names]
+coordinates(data) <- coords  
+dat_stat <- remove.duplicates(data[,c("ID_stat","id_coord",coord_names[[1]],coord_names[[2]])])
+#dat_stat <- remove.duplicates(data[,c("ID_stat","id_coord")])#,coord_names[[1]],coord_names[[2]])])
+
+#coords <- (data[,coord_names])
+#coords <- (dat_stat[,coord_names])
+#coords[,1] <- as.numeric(coords[,1])
+#coords[,2] <- as.numeric(coords[,2])
+#coords <- as.matrix(coords)
+#coordinates(dat_stat) <- coords  
+#dat_stat <- remove.duplicates(dat_stat)
+#dat_stat <- remove.duplicates(dat_stat)
+#dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
 #coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
 #coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
 #this needs to be changed to be general!!
@@ -166,24 +191,46 @@ coords <- (dat_stat[,coord_names])
 coords <- as.matrix(coords)
 coordinates(dat_stat) <- coords  
 
-if(data_type=="MH"){
+#dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
+
+#dat_stat <- subset(data, !is.na(data[[coord_names[1]]] & !is.na(data[[coord_names[2]]])))
+
+if(data_type=="MHB"){
+  proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
   proj4string(dat_stat) <- proj_str #this is the NAD83 latitude-longitude
   dat_stat<-spTransform(dat_stat,CRS(CRS_WGS84))     #Project from WGS84 to new coord. system
-  
 }
-if(data_type!="MH"){
+if(data_type="DMR"){
   proj4string(dat_stat) <- CRS_WGS84 #this is the NAD83 latitude-longitude
 }
+
 ## Remove duplicates rows from stations to identify uniques sations
-dat_stat <- remove.duplicates(dat_stat)
-dat_stat$LOCATION_ID <- 1:nrow(dat_stat)  
 
+if(is.null(var_ID)){
+  dat_stat$LOCATION_ID <- dat_stat$ID_stat  
+}
 
-debug(combine_stations_data_raster_ts_fun)
-df_combined <- combine_stations_data_raster_ts_fun(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix)
+#Process year by year:
 
+#i<-10 for 2012
+for(i in 1:length(years_to_process)){
+  year_processed <- years_to_process[i]
+  in_dir_rst <- grep(paste0("prism_ppt_",year_processed), list_dir_rainfall,value=T)
+  #in_dir_rst <- list_dir_rainfall[11]
+  
+  debug(combine_stations_data_raster_ts_fun)
+  df_combined <- combine_stations_data_raster_ts_fun(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix)
+  
+}
 
 ###### Part 2: plot information ####
+
+#Make this a function ??
+
+##Need to change here to match to the correct year...
+in_dir_rst <- list_dir_rainfall[11]
+
+#
 
 plot(r_rainfall,y=1)
 
