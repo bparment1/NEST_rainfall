@@ -51,6 +51,8 @@ shinyUI(fluidPage(
       #         "number of observations, the summary will still be based",
       #         "on the full dataset."),
       
+      dateRangeInput("dates", label = h3("Date range"))),
+    
       submitButton("Update View")
     ),
     
