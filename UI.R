@@ -51,15 +51,15 @@ shinyUI(fluidPage(
       #         "number of observations, the summary will still be based",
       #         "on the full dataset."),
       
-      dateRangeInput("dates", label = h3("Date range"))),
+      #dateRangeInput("dates", label = h3("Date range")),
     
       submitButton("Update View")
     ),
     
     mainPanel(
-      plotOutput("plot_ts"),
-      plotOutput("raster_map")
-    ),
+      plotOutput("plot_ts")#,
+      #plotOutput("raster_map")
+    )#,
     
     # Show a summary of the dataset and an HTML table with the
     # requested number of observations. Note the use of the h4
