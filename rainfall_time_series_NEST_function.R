@@ -436,7 +436,7 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   #coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
   dates_val <- seq(as.Date(start_date), as.Date(end_date), 'day')
   #date_l <- strptime(idx[1], "%Y%m%d") # 
-  dates_l <- format(idx, "%Y%m%d") #  date being processed
+  dates_str <- format(dates_val, "%Y%m%d") #  date being processed
   
   ###Get the relevant dates from the original dataset
   #data_subset <- data_merged[data_merged$TRIP_START_DATE_f >= as.Date(start_date) & data_merged$TRIP_START_DATE_f <= as.Date(end_date), ]
@@ -451,23 +451,23 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   
   list_pix <- vector("list",length=length(list_selected_ID))
   
-  debug(plotting_measurements_and_rainfall)
+  #debug(plotting_measurements_and_rainfall)
   #i <- 1
   
-  test <- lapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,
-                 df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_str,plot_fig=F)
-  
-  
-  test <- lapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,dates_val,
-                 df_ts_pix=df_ts_pix,data_var=data_subset,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_str,plot_fig=F)
+  #test <- lapply(1:1,FUN=plotting_measurements_and_rainfall,
+  #               df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F)
   
   #Takes 5mintues or less on bpy50 laptop
   num_cores <- 4
   list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,
-                               df_ts_pix=df_ts_pix,data_var=data_subset,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_mame,plot_fig=T,
+                               df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F,
                                mc.preschedule=FALSE,mc.cores= num_cores)
+  #list_df_combined <- mclapply(1:4,FUN=plotting_measurements_and_rainfall,
+  #                             df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F,
+  #                             mc.preschedule=FALSE,mc.cores= num_cores)
   
-  save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",out_suffix,".RData",sep="")))
+  save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",year_processed,"_",
+                                                      out_suffix,".RData",sep="")))
   
   #l_png_files <- mclapply(1:length(unlist(lf_mean_mosaic)),FUN=plot_mosaic,
   #                        list_param= list_param_plot_mosaic,
@@ -475,8 +475,9 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   
   list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
   data_df <- do.call(rbind,list_cleaning_df)
-  
-  return(dat_df)
+  write.table(data_df,file= file.path(out_dir,paste("data_df","_",year_processed,"_",
+                                                      out_suffix,".txt",sep="")),sep=",")
+  return(data_df)
 }
 
 
