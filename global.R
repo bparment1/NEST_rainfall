@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 03/25/2016
+#DATE MODIFIED: 03/28/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -48,10 +48,10 @@ library(shiny)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03122016.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
 #script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
-script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02" #path to script #PARAM 
+script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03" #path to script #PARAM 
 setwd(script_path)
 #script_path <- "." #path to script #PARAM 
 
@@ -83,7 +83,7 @@ load_obj <- function(f){
 #####  Parameters and argument set up ###########
 
 #in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
-in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
+in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03"
 #in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
 #in_dir_rainfall <- "/home/bparmentier/Google Drive/NEST_Data/"
 
@@ -94,25 +94,31 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_03102016" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_03282016" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=FALSE #PARAM8
 num_cores <- 4 #PARAM 9
 
 #rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
 rainfall_dir <- "./data" #PARAM 10
 #station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
-station_data_fname <- file.path("data", "MHB_data_2006-2015.csv") #PARAM 11
+#station_data_fname <- file.path("data", "MHB_data_2006-2015.csv") #PARAM 11
 
-start_date <- "2012-01-01" #PARAM 12
+station_measurements_MHB_data_fname <- file.path("data", "data_df_rainfall_and_measurements_MHB.txt") #PARAM 11 
+#This will change
+station_measurements_DMR_data_fname <- file.path("data", "data_df_rainfall_and_measurements_MHB.txt") #PARAM 11 
+
+start_date <- "2012-01-01" #PARAM 12, user define? this is the default value...
 end_date <- "2012-12-31" #PARAM 13
 #var_name <- "COL_SCORE" #PARAM 14
-var_name <- "CONCENTRATION" #PARAM 14, MH data
+var_name <- "CONCENTRATION" #PARAM 14, MHB data, need to add DMR
 var_ID <- "LOCATION_ID" #PARAM 15
 year_processed <- "2012" #PARAM 16
 threshold_val <- 2*25.4 #PARAM 17, in inches or mm
 convert_to_inches <- FALSE #PARAM 18
 units_val <- "mm"
 data_type <- "MH" #for Maine beach health
+
+## Change coordinates to x and y and lat long!!!
 coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MH beach bacteria dataset
 #coord_names <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #cloroforms beach bacteria dataset
 data_df_fname <- "./data/df_ts_pix_2012.txt"
@@ -120,10 +126,12 @@ data_df_fname <- "./data/df_ts_pix_2012.txt"
 
 SMAZones_fname <- "SMAZoneDissolve.shp"
 
+dat_stat_location_MHB_fname <- "dat_stat_location_MHB.shp"
+dat_stat_location_DMR_fname <- "dat_stat_location_DMR.shp"
+dat_stat_location_DMR_fname <- "dat_stat_location_MHB.shp" #Use this for now
 
 ################# START SCRIPT ###############################
 
-### PART I READ AND PREPARE DATA FOR REGRESSIONS #######
 #set up the working directory
 #Create output directory
 
@@ -136,79 +144,44 @@ setwd(in_dir)
 #}else{
 #  setwd(out_dir) #use previoulsy defined directory
 #}
-SMAZones <- readOGR("./data",sub(".shp","",SMAZones_fname))
 
 list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
-
 #remove non relevant directories
+list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
 
-#### Part 1: read in and combine the information ####
+#### Part 1: read in combined information by stations ####
 
-data <- read.table(station_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
-data$FID <- 1:nrow(data)
+data_df_MHB <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
+data_df_DMR <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 
-##Find which date we have
+dat_stat_location_MHB <- readOGR("./data",sub(".shp","",dat_stat_location_MHB_fname))
+dat_stat_location_DMR <- readOGR("./data",sub(".shp","",dat_stat_location_MHB_fname))
 
-in_dir_rst <- list_dir_rainfall[11]
-r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
+### Part 2: read in raster rainfall data and SMA zones
+
+SMAZones <- readOGR("./data",sub(".shp","",SMAZones_fname))
+
+#for(i in 1:length(list_dir_rainfall)){
+#  in_dir_rst <- list_dir_rainfall[11]
+#  r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
+#}
 
 if (convert_to_inches==TRUE){
   r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
 }
 
-data_df <- read.table(data_df_fname)
-
+#data_df <- read.table(data_df_fname)
 #coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
-idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
+#idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
 #date_l <- strptime(idx[1], "%Y%m%d") # 
-dates_l <- format(idx, "%Y%m%d") #  date being processed
+#dates_l <- format(idx, "%Y%m%d") #  date being processed
 
 proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
-#data$LOCATION_ID <- as.character(data$LOCATION_ID)
-#length(unique(data$LOCATION_ID)) #There are 2851 stations
 
-##################
-##Make this part a function later on...
-
-### Select unique stations and make a SPDF
-#data$FID <- 1:nrow(data)
-data[[coord_names[1]]] <- as.numeric(data[[coord_names[1]]])
-data[[coord_names[2]]] <- as.numeric(data[[coord_names[2]]])
-
-#dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
-dat_stat <- subset(data, !is.na(data[[coord_names[1]]] & !is.na(data[[coord_names[2]]])))
-dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
-
-#coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
-#coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
-#this needs to be changed to be general!!
-#dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
-coords <- (dat_stat[,coord_names])
-#coords[,1] <- as.numeric(coords[,1])
-#coords[,2] <- as.numeric(coords[,2])
-coords <- as.matrix(coords)
-coordinates(dat_stat) <- coords  
-
-if(data_type=="MH"){
-  proj4string(dat_stat) <- proj_str #this is the NAD83 latitude-longitude
-  dat_stat<-spTransform(dat_stat,CRS(CRS_WGS84))     #Project from WGS84 to new coord. system
-  
-}
-if(data_type!="MH"){
-  proj4string(dat_stat) <- CRS_WGS84 #this is the NAD83 latitude-longitude
-}
-## Remove duplicates rows from stations to identify uniques sations
-dat_stat <- remove.duplicates(dat_stat)
-dat_stat$LOCATION_ID <- 1:nrow(dat_stat)  
-
-
-#zonal()
-
-test <- over( SMAZones , ind_adm , fn = NULL) 
-test <- over( data_df  , SMAZones , fn = NULL) 
+#test <- over( SMAZones , ind_adm , fn = NULL) 
+#test <- over( data_df  , SMAZones , fn = NULL) 
 
 ########################### End of script #####################################
-
 
 #http://shiny.rstudio.com/tutorial/lesson7/
 #http://shiny.rstudio.com/articles/shinyapps.html
