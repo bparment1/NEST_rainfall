@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 03/27/2016
+#DATE MODIFIED: 03/28/2016
 #Version: 3
 #PROJECT: NEST beach closures            
 
@@ -136,6 +136,7 @@ list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
 
 #remove non relevant directories
 
+###########################
 #### Part 1: read in and combine the information ####
 
 data <- read.table(station_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
@@ -214,14 +215,15 @@ if(is.null(var_ID)){
 
 ### Write out basic informaiotn before processing by years
 
-write.table(as.data.frame(dat_stat),file=file.path(out_dir,paste0("dat_stat_location",".txt")),sep=",")
-writeOGR(dat_stat,dsn= out_dir,layer= "dat_stat_location", 
+write.table(as.data.frame(dat_stat),file=file.path(out_dir,paste0("dat_stat_location_",data_type,".txt")),sep=",")
+writeOGR(dat_stat,dsn= out_dir,layer= paste0("dat_stat_location_",data_type), 
           driver="ESRI Shapefile",overwrite_layer="TRUE")
-write.table(as.data.frame(data),file=file.path(out_dir,paste0("data",".txt")),sep=",")
+write.table(as.data.frame(data),file=file.path(out_dir,paste0("data_measurements_",data_type,".txt")),sep=",")
 
-data <- merge(data,dat_ID,by="id_coord",all=T,suffixes=c("","_y"))
+#data <- merge(data,dat_ID,by="id_coord",all=T,suffixes=c("","_y"))
 
-#Process year by year:
+##########################
+#### Part2: Process year by year
 
 #i<-10 #for 2012
 for(i in 1:length(years_to_process)){
@@ -237,6 +239,15 @@ for(i in 1:length(years_to_process)){
   df_combined <- combine_stations_data_raster_ts_fun(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix)
   
 }
+
+###########################
+#### Part 3: combine all data together
+
+list_df_fname <- list.files(path=out_dir,pattern="data_df_.*._NEST_prism_03272016.txt",full.names=T)
+list_df <- lapply(list_df_fname,function(x){read.table(x,stringsAsFactors=F,sep=",")})
+tb <- do.call(rbind,list_df)
+
+write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_",data_type,".txt")),sep=",")
 
 # ###### Part 2: plot information ####
 # 
