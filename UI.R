@@ -40,15 +40,17 @@ shinyUI(fluidPage(
     sidebarPanel(
       selectInput("dataset", "Choose a dataset:", 
                   choices = c("MHB", "DMR")),
-      if(dataset=="MHB"){
-        station_ID <- data_df_MHB$LOCATION_ID
-      }else{
-        station_ID <- data_df_DMR$LOCATION_ID
-      }
+      #if(dataset=="MHB"){
+      #  station_ID <- data_df_MHB$LOCATION_ID
+      #}
+      #if(dataset=="DMR"){
+      #  station_ID <- data_df_DMR$LOCATION_ID
+      #}
       #selectInput("station", "Choose a station:", 
-      #            choices = data_df$LOCATION_ID),   
+      #            choices = station_ID),  
       selectInput("station", "Choose a station:", 
-                  choices = station_ID),   
+                  choices = unique(data_df_MHB$LOCATION_ID)),   
+ 
       
       #numericInput("obs", "Number of observations to view:", 10),
       
@@ -59,8 +61,8 @@ shinyUI(fluidPage(
       #         "number of observations, the summary will still be based",
       #         "on the full dataset."),
       
-      dateRangeInput("dates", label = h3("Date range")),
-    
+      #dateRangeInput("dates", label = h3("Date range")),
+      dateRangeInput("dates", start=start_date,end=end_date,label = h3("Date range")),
       submitButton("Update View")
     ),
     
