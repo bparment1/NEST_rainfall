@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 03/13/2016
+#DATE MODIFIED: 03/28/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -38,10 +38,18 @@ shinyUI(fluidPage(
   sidebarLayout(
     
     sidebarPanel(
-      #selectInput("dataset", "Choose a dataset:", 
-      #            choices = c("rock", "pressure", "cars")),
+      selectInput("dataset", "Choose a dataset:", 
+                  choices = c("MHB", "DMR")),
+      if(dataset=="MHB"){
+        station_ID <- data_df_MHB$LOCATION_ID
+      }else{
+        station_ID <- data_df_DMR$LOCATION_ID
+      }
+      #selectInput("station", "Choose a station:", 
+      #            choices = data_df$LOCATION_ID),   
       selectInput("station", "Choose a station:", 
-                  choices = data_df$LOCATION_ID),   
+                  choices = station_ID),   
+      
       #numericInput("obs", "Number of observations to view:", 10),
       
       helpText("Note: the plot will show the specified",
@@ -51,14 +59,14 @@ shinyUI(fluidPage(
       #         "number of observations, the summary will still be based",
       #         "on the full dataset."),
       
-      #dateRangeInput("dates", label = h3("Date range")),
+      dateRangeInput("dates", label = h3("Date range")),
     
       submitButton("Update View")
     ),
     
     mainPanel(
-      plotOutput("plot_ts")#,
-      #plotOutput("raster_map")
+      plotOutput("plot_ts"),
+      plotOutput("raster_map")
     )#,
     
     # Show a summary of the dataset and an HTML table with the
