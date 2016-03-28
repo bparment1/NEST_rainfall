@@ -60,6 +60,9 @@ shinyServer(function(input, output) {
     #data_pixel <- as.data.frame(data_pixel)
     d_z_tmp2 <- zoo(data_pixel[[var_name]],as.Date(data_pixel$date))
     
+    start_date <-input$dates[1]
+    end_date <-input$dates[2]
+    
     d_z <- window(d_z_tmp,start=start_date,end=end_date)
     d_z2 <- window(d_z_tmp2,start=start_date,end=end_date)
     df2 <- as.data.frame(d_z2)
@@ -95,7 +98,6 @@ shinyServer(function(input, output) {
     
     axis(4,cex=1.2)
     mtext(4, text = "coliform scores", line = 3)
-    
     #title(paste("Station time series",id_name,sep=" "))
     
     
@@ -107,9 +109,34 @@ shinyServer(function(input, output) {
     #else if (input$variable == "Map2")
     #  data <- raster("file2.asc")
     #levelplot(data, margin=FALSE, par.settings=GrTheme)
-    plot(r_rainfall,y=1,ext=extent(dat_stat),main=paste0("Raster image for ",idx[1]))
+    
+    start_date <-input$dates[1]
+    end_date <-input$dates[2]
+    
+    year_processed <- year(start_date) #make this work for end dates too!!
+    in_dir_rst <- grep(paste0("prism_ppt_",year_processed), list_dir_rainfall,value=T)
+    r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
+    
+    
+    if (convert_to_inches==TRUE){
+      r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
+    }
+    
+    if(input$dataset=="MHB"){
+      dat_stat <- dat_stat_location_MHB
+      rm(dat_stat_location_MHB)
+      rm(dat_stat_location_DMR)
+    }
+    if(input$dataset=="DMR"){
+      dat_stat <- dat_stat_location_DMR
+      rm(dat_stat_location_MHB)
+      rm(dat_stat_location_DMR)
+    }
+    
+    date_str <- paste0(year_processed,"-01-01") #change this later!!
+    plot(r_rainfall,y=1,ext=extent(dat_stat),main=paste0("Raster image for ",date_str))
     plot(dat_stat,add=T,pch=3)
-    text(dat_stat,dat_stat$LOCATION_ID,cex=1.4)
+    #text(dat_stat,dat_stat$LOCATION_ID,cex=1.4)
     legend("topright",legend=c("stations"), 
            cex=1.2, col="black",pch =3,bty="n")
   })
