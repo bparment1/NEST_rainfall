@@ -45,13 +45,22 @@ library(shiny)
 #library(shiny)
 #runExample()
 #runExample("07_widgets")
+#Run on shinyapps.io
+#First navigate to the location of the app:
+#/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03
+#Note that all data and files referenced in the app should be location in the folder above
+#see shinyio
+#http://shiny.rstudio.com/articles/shinyapps.html
+#library(rsconnect)
+#deployApp()
 
 ###### Functions used in this script sourced from other files
 
 function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
 #script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
-script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03" #path to script #PARAM 
+#script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03" #path to script #PARAM 
+script_path <- "/home/benoit/data/NEST_stations_s04" #on SSI server
 setwd(script_path)
 #script_path <- "." #path to script #PARAM 
 
@@ -83,8 +92,8 @@ load_obj <- function(f){
 #####  Parameters and argument set up ###########
 
 #in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
-in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03"
-#in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
+#in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03"
+in_dir <- "/home/benoit/data/NEST_stations_s04" #NCEAS, param 
 #in_dir_rainfall <- "/home/bparmentier/Google Drive/NEST_Data/"
 
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
@@ -116,7 +125,7 @@ year_processed <- "2012" #PARAM 16
 threshold_val <- 2*25.4 #PARAM 17, in inches or mm
 convert_to_inches <- FALSE #PARAM 18
 units_val <- "mm"
-data_type <- "MH" #for Maine beach health
+data_type <- "MHB" #for Maine beach health
 
 ## Change coordinates to x and y and lat long!!!
 coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MH beach bacteria dataset
