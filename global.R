@@ -60,7 +60,8 @@ function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functi
 #script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
 #script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03" #path to script #PARAM 
-script_path <- "/home/benoit/data/NEST_stations_s04" #on SSI server
+#script_path <- "/home/benoit/data/NEST_stations_s04" #on SSI server
+script_path <- "." #on SSI server
 setwd(script_path)
 #script_path <- "." #path to script #PARAM 
 
@@ -93,7 +94,8 @@ load_obj <- function(f){
 
 #in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03"
-in_dir <- "/home/benoit/data/NEST_stations_s04" #NCEAS, param 
+#in_dir <- "/home/benoit/data/NEST_stations_s04" #NCEAS, param 
+in_dir <- "." #NCEAS, param 
 #in_dir_rainfall <- "/home/bparmentier/Google Drive/NEST_Data/"
 
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
