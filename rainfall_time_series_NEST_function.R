@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 03/25/2016
+#DATE MODIFIED: 04/10/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -366,33 +366,26 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   #### Start script ###
   
   if(data_type=="MHB"){
-    #
-    #
     dates_TRIP_START <- unlist(lapply(strsplit(data$SAMPLE.DATE," "),function(x){x[1][1]}))
     #dates_TRIP_START <- gsub(" 0:00:00","",data$SAMPLE.DATE)
-    
     data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
     data$TRIP_START_DATE_year <- four.digit.year(data$TRIP_START_DATE_f , year=1968)
     #format(data$TRIP_START_DATE_f , format="%m-%d-%Y")
-    
     data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
-   
     data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
-    data$TRIP_START_DATE_f <- paste0(data$TRIP_START_DATE_year,data$TRIP_START_DATE_month,data$TRIP_START_DATE_day)
-    
-    data$TRIP_START_DATE_f <- as.Date(strptime(data$TRIP_START_DATE_f,"%Y%m%d"))
-    #dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
-    #data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
-    #data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
-    #data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
-    #data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
-    
-    #Browse[2]> proj4string(dat_stat) <- projection(r_rainfall) #this is the NAD83 latitude-longitude
-    #Error in ReplProj4string(obj, CRS(value)) : 
-    #  Geographical CRS given to non-conformant data: 2854 2814
-    
+  }
+  if(data_type=="DMR"){
+    dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
+    data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
+    data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
+    data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
+    data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
   }
   
+  data$TRIP_START_DATE_f <- paste0(data$TRIP_START_DATE_year,data$TRIP_START_DATE_month,data$TRIP_START_DATE_day)
+  data$TRIP_START_DATE_f <- as.Date(strptime(data$TRIP_START_DATE_f,"%Y%m%d"))
+  
+
   r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
   
   if (convert_to_inches==TRUE){
