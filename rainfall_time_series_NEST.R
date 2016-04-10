@@ -5,8 +5,8 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 03/28/2016
-#Version: 3
+#DATE MODIFIED: 04/10/2016
+#Version: 4
 #PROJECT: NEST beach closures            
 
 #
@@ -47,7 +47,7 @@ library(hydrostats)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_04102016.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
@@ -88,32 +88,34 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_03272016" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_04102016" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=TRUE #PARAM8
 num_cores <- 4 #PARAM 9
 
 rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
 station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
-station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST/", "MHB_data_2006-2015.csv") #PARAM 11
+#station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST/", "MHB_data_2006-2015.csv") #PARAM 11
 
 years_to_process <- 2003:2016
 #start_date <- "2012-01-01" #PARAM 12
 #end_date <- "2012-12-31" #PARAM 13 #should process by year!!!
-#var_name <- "COL_SCORE" #PARAM 14
-var_name <- "CONCENTRATION" #PARAM 14, MH data
-#var_ID <- "LOCATION_ID" #PARAM 15
-var_ID <- NULL #PARAM 15 if null then create a new ID for stations!!
+var_name <- "COL_SCORE" #PARAM 14, DMR data
+#var_name <- "CONCENTRATION" #PARAM 14, MHB data
+var_ID <- "LOCATION_ID" #PARAM 15
+#var_ID <- NULL #PARAM 15 if null then create a new ID for stations!!, not null for DMR
 year_processed <- "2012" #PARAM 16
 threshold_val <- 2*25.4 #PARAM 17, in inches or mm
 convert_to_inches <- FALSE #PARAM 18
-units_val <- "mm"
-data_type <- "MHB" #for Maine Healthy Beaches
-#data_type <- "DMR" #for Maine Department of Marine Resources
+units_val <- "mm" #PARAM 19
+#data_type <- "MHB" #for Maine Healthy Beaches
+data_type <- "DMR" #for Maine Department of Marine Resources #PARAM 20
+x_coord_range <- c(-180,180) #PARAM 21
+y_coord_range <- c(-90,90) #PARM 22
 
-coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MH beach bacteria dataset
-#coord_names <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #cloroforms beach bacteria dataset
+#coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MHB, beach bacteria dataset
+coord_names <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #DMR, cloroforms beach bacteria dataset #PARAM 23
 
-SMAZones_fname <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s02/data/SMAZoneDissolve.shp"
+SMAZones_fname <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s02/data/SMAZoneDissolve.shp" #PARAM 24
 SMAZones <- readOGR(dirname(SMAZones_fname),sub(".shp","",basename(SMAZones_fname)))
 
 ################# START SCRIPT ###############################
@@ -160,6 +162,15 @@ data$FID <- 1:nrow(data)
 data[[var_name]] <- as.numeric(data[[var_name]]) #make sure we have a numeric field
 data[[coord_names[1]]] <- as.numeric(data[[coord_names[1]]])
 data[[coord_names[2]]] <- as.numeric(data[[coord_names[2]]])
+index_x <- data[[coord_names[1]]] < x_coord_range[1]
+data[[coord_names[1]]][index_x] <- NA 
+index_x <- data[[coord_names[2]]] > x_coord_range[2]
+data[[coord_names[2]]][index_x] <- NA 
+index_y <- data[[coord_names[2]]] < y_coord_range[1]
+data[[coord_names[2]]][index_y] <- NA 
+index_y <- data[[coord_names[2]]] > y_coord_range[2]
+data[[coord_names[2]]][index_y] <- NA 
+
 data <- subset(data, !is.na(data[[coord_names[1]]]) & !is.na(data[[coord_names[2]]]))
 data$id_coord <- paste(data[[coord_names[1]]],data[[coord_names[2]]],sep="_")
 
