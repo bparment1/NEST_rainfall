@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 04/10/2016
+#DATE MODIFIED: 04/11/2016
 #Version: 4
 #PROJECT: NEST beach closures            
 
@@ -47,7 +47,7 @@ library(hydrostats)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_04102016.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_04112016.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
@@ -143,16 +143,6 @@ list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
 
 data <- read.table(station_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 data$FID <- 1:nrow(data)
-#data$ID <- paste(data[[coord_names[1]]],data[[coord_names[2]]],sep="_")
-
-#data <- read.table(station_data_fname,sep=",",header=T,stringsAsFactors = F) #bacteria measurements
-#> data <- read.table(station_data_fname,sep=",",header=T) #this is T-mode using cor matrix
-#Error in scan(file, what, nmax, sep, dec, quote, skip, nlines, na.strings,  : 
-#                line 47 did not have 35 elements
-### Before combining data get unique station 
-
-#data$LOCATION_ID <- as.character(data$LOCATION_ID)
-#length(unique(data$LOCATION_ID)) #There are 2851 stations
 
 ##################
 ##Make this part a function later on...
@@ -171,10 +161,45 @@ data[[coord_names[2]]][index_y] <- NA
 index_y <- data[[coord_names[2]]] > y_coord_range[2]
 data[[coord_names[2]]][index_y] <- NA 
 
+#> dim(data)
+#[1] 106262     36
+
 data <- subset(data, !is.na(data[[coord_names[1]]]) & !is.na(data[[coord_names[2]]]))
-data$id_coord <- paste(data[[coord_names[1]]],data[[coord_names[2]]],sep="_")
+
+#> dim(data)
+#[1] 83187    37
+
+#### Now check that dates are available for all records!!
+
+if(data_type=="MHB"){
+  dates_TRIP_START <- unlist(lapply(strsplit(data$SAMPLE.DATE," "),function(x){x[1][1]}))
+  #dates_TRIP_START <- gsub(" 0:00:00","",data$SAMPLE.DATE)
+  data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
+  data$TRIP_START_DATE_year <- four.digit.year(data$TRIP_START_DATE_f , year=1968)
+  #format(data$TRIP_START_DATE_f , format="%m-%d-%Y")
+  data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
+  data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
+}
+if(data_type=="DMR"){
+  dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
+  data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
+  data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
+  data$TRIP_START_DATE_year <- strftime(data$TRIP_START_DATE_f , "%Y")
+  data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
+}
+
+data$TRIP_START_DATE_f <- paste0(data$TRIP_START_DATE_year,data$TRIP_START_DATE_month,data$TRIP_START_DATE_day)
+data$TRIP_START_DATE_f <- as.Date(strptime(data$TRIP_START_DATE_f,"%Y%m%d"))
+##for DMR removing 7 rows
+data <- subset(data, !is.na(data[["TRIP_START_DATE_f"]]) )
+
+#> dim(data)
+#[1] 83180    41
 
 ## Remove duplicates rows from stations to identify uniques sations
+##Create unique identifier from coordinates
+
+data$id_coord <- paste(data[[coord_names[1]]],data[[coord_names[2]]],sep="_")
 
 id_coord <- unique(data$id_coord)
 ID_stat <- 1:length(id_coord)
@@ -184,29 +209,6 @@ data <- merge(data,dat_ID,by="id_coord",all=T,suffixes=c("","_y"))
 coords <- data[,coord_names]
 coordinates(data) <- coords  
 dat_stat <- remove.duplicates(data[,c("ID_stat","id_coord",coord_names[[1]],coord_names[[2]])])
-#dat_stat <- remove.duplicates(data[,c("ID_stat","id_coord")])#,coord_names[[1]],coord_names[[2]])])
-#coords <- (data[,coord_names])
-#coords <- (dat_stat[,coord_names])
-#coords[,1] <- as.numeric(coords[,1])
-#coords[,2] <- as.numeric(coords[,2])
-#coords <- as.matrix(coords)
-#coordinates(dat_stat) <- coords  
-#dat_stat <- remove.duplicates(dat_stat)
-#dat_stat <- remove.duplicates(dat_stat)
-#dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
-#coords$LONGITUDE_DECIMAL <- as.numeric(coords$LONGITUDE_DECIMAL)
-#coords$LATITUDE_DECIMAL <- as.numeric(coords$LATITUDE_DECIMAL)
-#this needs to be changed to be general!!
-#dat_stat <- subset(dat_stat, !is.na(dat_stat$SITE.LONGITUDE..UTM.) & !is.na(dat_stat$SITE.LATITUDE..UTM.))
-#coords <- (dat_stat[,coord_names])
-#coords[,1] <- as.numeric(coords[,1])
-#coords[,2] <- as.numeric(coords[,2])
-#coords <- as.matrix(coords)
-#coordinates(dat_stat) <- coords  
-
-#dat_stat <- subset(data_subset, !is.na(coord_names[1]) & !is.na(coord_names[2]))
-
-#dat_stat <- subset(data, !is.na(data[[coord_names[1]]] & !is.na(data[[coord_names[2]]])))
 
 if(data_type=="MHB"){
   proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
@@ -219,10 +221,28 @@ if(data_type=="DMR"){
 
 ## Remove duplicates rows from stations to identify uniques sations
 
+##MODIFY HERE, FIND MATCHES between LOCATION_ID and ID_stat
+#2251 for ID_stat
+#2247 unique val for LOCATION_ID
+#sort(unique(data$LOCATION_ID))
+#> xtabs(data$ID_stat ~data$LOCATION_ID,data)
+#data$LOCATION_ID
+#2.00     25.10     29.00     31.00      4.00     86.00     A1COL  EA001.00  EA002.00  EA003.00  EA003.50 
+#1640      1945      1597      1703      1795      1700      1924     32886    108813     90882     16464 
+#EA004.00  EA005.00  EA006.00  EA007.00  EA008.00  EA009.00  EA010.00  EA011.00  EA012.00  EA013.00  EA014.00 
+#53380     33798      3888     33054     33376     28368     41740     42606     52930     58534     60984 
+#There are some issues with the station identifier. FIx this later, use ID_stat as the identifier 
+#for processing for now.
 if(is.null(var_ID)){
   dat_stat$LOCATION_ID <- dat_stat$ID_stat
   var_ID <- "LOCATION_ID"
-}
+}#else{
+#  test <- merge(dat_stat,data,by="id_coord",all=T,suffixes=c("","_y"))
+#}
+#crosstab(Survey, row.vars = "Age", col.vars = "Sex", type = "f")
+
+#xtabs(data$ID_stat,data$LOCATION_ID)
+#xtabs(data$ID_stat ~data$LOCATION_ID,data)
 
 ### Write out basic informaiotn before processing by years
 
