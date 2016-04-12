@@ -5,12 +5,12 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 03/28/2016
-#Version: 1
+#DATE MODIFIED: 04/12/2016
+#Version: 5
 #PROJECT: NEST beach closures            
 
 #
-#COMMENTS: -   
+#COMMENTS: - Adding DMR data to MHB   
 #          - 
 #TO DO:
 
@@ -60,8 +60,7 @@ function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functi
 #script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
 #script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03" #path to script #PARAM 
-#script_path <- "/home/benoit/data/NEST_stations_s04" #on SSI server
-script_path <- "." #on SSI server
+script_path <- "/home/benoit/data/NEST_stations_s05" #on SSI server
 setwd(script_path)
 #script_path <- "." #path to script #PARAM 
 
@@ -93,9 +92,10 @@ load_obj <- function(f){
 #####  Parameters and argument set up ###########
 
 #in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
-#in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03"
-#in_dir <- "/home/benoit/data/NEST_stations_s04" #NCEAS, param 
-in_dir <- "." #NCEAS, param 
+in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s05"
+#in_dir <- "./NEST_stations_s05" #NCEAS, param 
+#in_dir <- "/home/benoit/data/NEST_stations_s05" #NCEAS, param 
+
 #in_dir_rainfall <- "/home/bparmentier/Google Drive/NEST_Data/"
 
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
@@ -116,30 +116,36 @@ rainfall_dir <- "./data" #PARAM 10
 
 station_measurements_MHB_data_fname <- file.path("data", "data_df_rainfall_and_measurements_MHB.txt") #PARAM 11 
 #This will change
-station_measurements_DMR_data_fname <- file.path("data", "data_df_rainfall_and_measurements_MHB.txt") #PARAM 11 
+station_measurements_DMR_data_fname <- file.path("data", "data_df_rainfall_and_measurements_DMR.txt") #PARAM 11 
+#station_measurements_DMR_data_fname <- list.files(path=file.path(in_dir,"data"),
+#                                                  pattern="data_df_combined_.*._DMR.txt",
+#                                                  full.names=T) #PARAM 11 
+#station_measurements_MHB_data_fname <- list.files(path=file.path(in_dir,"data"),
+#                                                  pattern="data_df_.*._NEST_prism_03272016.txt",
+#                                                  full.names=T) #PARAM 11 
 
-start_date <- "2012-01-01" #PARAM 12, user define? this is the default value...
-end_date <- "2012-12-31" #PARAM 13
-#var_name <- "COL_SCORE" #PARAM 14
-var_name <- "CONCENTRATION" #PARAM 14, MHB data, need to add DMR
+start_date <- "2012-01-01" #PARAM 12,  this is the default value, use user define otherwise
+end_date <- "2012-12-31" #PARAM 13,  this is the default value, use user define otherwise
+var_name_DMR <- "COL_SCORE" #PARAM 14
+var_name_MHB <- "CONCENTRATION" #PARAM 14, MHB data, need to add DMR
+
 var_ID <- "LOCATION_ID" #PARAM 15
 year_processed <- "2012" #PARAM 16
 threshold_val <- 2*25.4 #PARAM 17, in inches or mm
 convert_to_inches <- FALSE #PARAM 18
 units_val <- "mm"
-data_type <- "MHB" #for Maine beach health
+data_type <- "MHB" #for Maine beach health used as default, it is user defined otherwise
 
 ## Change coordinates to x and y and lat long!!!
-coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MH beach bacteria dataset
-#coord_names <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #cloroforms beach bacteria dataset
-data_df_fname <- "./data/df_ts_pix_2012.txt"
+coord_names_MHB <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MH beach bacteria dataset
+coord_names_DMR <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #cloroforms beach bacteria dataset
+#data_df_fname <- "./data/df_ts_pix_2012.txt"
 #/home/bparmentier/Google Drive/NEST/NEST_stations_s02/data
 
 SMAZones_fname <- "SMAZoneDissolve.shp"
 
-dat_stat_location_MHB_fname <- "dat_stat_location_MHB.shp"
-dat_stat_location_DMR_fname <- "dat_stat_location_DMR.shp"
-dat_stat_location_DMR_fname <- "dat_stat_location_MHB.shp" #Use this for now
+dat_stat_location_DMR_fname <- "dat_stat_location_DMR.shp" #Use this for now
+dat_stat_location_MHB_fname <- "dat_stat_location_MHB.shp" #Use this for now
 
 ################# START SCRIPT ###############################
 
@@ -162,11 +168,18 @@ list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
 
 #### Part 1: read in combined information by stations ####
 
+#list_df_fname <- list.files(path=out_dir,pattern="data_df_.*._NEST_prism_03272016.txt",full.names=T)
+#list_df <- lapply(list_df_fname,function(x){read.table(x,stringsAsFactors=F,sep=",")})
+#tb <- do.call(rbind,list_df)
+
+#write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_",data_type,".txt")),sep=",")
+
+##Should we read table in?
 data_df_MHB <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 data_df_DMR <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 
 dat_stat_location_MHB <- readOGR("./data",sub(".shp","",dat_stat_location_MHB_fname))
-dat_stat_location_DMR <- readOGR("./data",sub(".shp","",dat_stat_location_MHB_fname))
+dat_stat_location_DMR <- readOGR("./data",sub(".shp","",dat_stat_location_DMR_fname))
 
 ### Part 2: read in raster rainfall data and SMA zones
 
@@ -196,3 +209,15 @@ proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #Th
 
 #http://shiny.rstudio.com/tutorial/lesson7/
 #http://shiny.rstudio.com/articles/shinyapps.html
+
+#data_df_combined_.*._DMR.txt
+
+#list_df_fname <- list.files(path=out_dir,pattern="data_df_.*._NEST_prism_03272016.txt",full.names=T)
+#list_df_fname <- list.files(path=out_dir,pattern="data_df_combined_.*._DMR.txt",full.names=T)
+#list_df_fname <- station_measurements_DMR_data_fname
+#list_df <- lapply(list_df_fname,function(x){read.table(x,stringsAsFactors=F,sep=",")})
+
+#tb <- do.call(rbind,list_df)
+#write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_","DMR",".txt")),sep=",")
+
+#write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_",data_type,".txt")),sep=",")
