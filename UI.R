@@ -5,12 +5,12 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 03/28/2016
+#DATE MODIFIED: 04/12/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
 #
-#COMMENTS: -   
+#COMMENTS: -  Adding DMR data
 #          - 
 #TO DO:
 
@@ -48,8 +48,10 @@ shinyUI(fluidPage(
       #}
       #selectInput("station", "Choose a station:", 
       #            choices = station_ID),  
+      #selectInput("station", "Choose a station:", 
+      #            choices = unique(data_df_MHB$LOCATION_ID)),  
       selectInput("station", "Choose a station:", 
-                  choices = unique(data_df_MHB$LOCATION_ID)),   
+                  choices = unique(data_df$LOCATION_ID)),  
  
       
       #numericInput("obs", "Number of observations to view:", 10),
