@@ -50,9 +50,10 @@ shinyUI(fluidPage(
       #            choices = station_ID),  
       #selectInput("station", "Choose a station:", 
       #            choices = unique(data_df_MHB$LOCATION_ID)),  
+      #selectInput("station", "Choose a station:", 
+      #            choices = unique(data_df$LOCATION_ID)),  
       selectInput("station", "Choose a station:", 
-                  choices = unique(data_df$LOCATION_ID)),  
- 
+                choices = unique(output$data_df$LOCATION_ID)),  
       
       #numericInput("obs", "Number of observations to view:", 10),
       
