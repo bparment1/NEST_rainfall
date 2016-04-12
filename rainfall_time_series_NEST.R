@@ -100,6 +100,7 @@ years_to_process <- 2003:2016
 #start_date <- "2012-01-01" #PARAM 12
 #end_date <- "2012-12-31" #PARAM 13 #should process by year!!!
 var_name <- "COL_SCORE" #PARAM 14, DMR data
+#var_name_raster <- rainfall
 #var_name <- "CONCENTRATION" #PARAM 14, MHB data
 var_ID <- "LOCATION_ID" #PARAM 15
 #var_ID <- NULL #PARAM 15 if null then create a new ID for stations!!, not null for DMR
@@ -267,96 +268,20 @@ for(i in 1:length(years_to_process)){
   #end_date <- "2012-12-31" #PARAM 13 #should process by year!!!
   
   #debug(combine_stations_data_raster_ts_fun)
-  df_combined <- combine_stations_data_raster_ts_fun(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix)
-  
+  #df_combined <- combine_stations_data_raster_ts_fun(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix)
+  df_combined <- combine_stations_data_raster_ts_fun(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,year_processed,data_type,coord_names,num_cores,out_dir,out_suffix)
+    
 }
+#For DMR data, it took 1h43 minutes...
 
 ###########################
 #### Part 3: combine all data together
 
-list_df_fname <- list.files(path=out_dir,pattern="data_df_.*._NEST_prism_03272016.txt",full.names=T)
-list_df <- lapply(list_df_fname,function(x){read.table(x,stringsAsFactors=F,sep=",")})
-tb <- do.call(rbind,list_df)
+#Don't combine ? It's too large for DMR: 676002 rows per year or 13*676002=8,788,026
+#list_df_fname <- list.files(path=out_dir,pattern="data_df_.*._NEST_prism_03272016.txt",full.names=T)
+#list_df <- lapply(list_df_fname,function(x){read.table(x,stringsAsFactors=F,sep=",")})
+#tb <- do.call(rbind,list_df)
 
-write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_",data_type,".txt")),sep=",")
-
-# ###### Part 2: plot information ####
-# 
-# #Make this a function ??
-# 
-# ##Need to change here to match to the correct year...
-# in_dir_rst <- list_dir_rainfall[11]
-# 
-# #
-# 
-# plot(r_rainfall,y=1)
-# 
-# res_pix <- 480
-# col_mfrow <- 1
-# row_mfrow <- 1
-# 
-# png(filename=paste("Figure1_","histogram","_station_coliform_measurements_frequency_",year_processed,"_",out_suffix,".png",sep=""),
-#     width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-# 
-# plot(table(data_subset$LOCATION_ID),type="h", main="Number of measurements",
-#      ylab="Frequency of coliform measurements",xlab="Station ID")
-# 
-# dev.off()
-# 
-# #hist(table(data_subset$COL_SCORE))
-# #Could output in a textfile
-# range(table(dat_stat$LOCATION_ID)) #1 to 60
-# mean(table(dat_stat$LOCATION_ID)) #8
-# median(table(data_subset$LOCATION_ID)) #8
-# hist(table(data_subset$LOCATION_ID), main="Frequency of Number of measurements by stations")
-# 
-# ref_pol <- create_polygon_from_extent(dat_stat,outDir=out_dir,outSuffix=out_suffix)
-#   
-# res_pix <- 480
-# col_mfrow <- 1.5
-# row_mfrow <- 1
-# 
-# png(filename=paste("Figure2a_","rainfall_map_",dates_l[1],"_and_stations_",out_suffix,".png",sep=""),
-#     width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-# 
-# plot(r_rainfall,y=1)
-# plot(dat_stat,add=T)
-# text(dat_stat,dat_stat$tID,cex=1.4)
-# plot(ref_pol,border="red",add=T)
-# legend("topright",legend=c("stations"), 
-#        cex=1.2, col="black",pch =3,bty="n")
-# 
-# dev.off()
-# 
-# col_mfrow <- 2
-# row_mfrow <- 1
-# 
-# png(filename=paste("Figure2b_","rainfall_map_",dates_l[1],"_and_stations_zoom_window_",out_suffix,".png",sep=""),
-#     width=col_mfrow*res_pix,height=row_mfrow*res_pix)
-# 
-# plot(r_rainfall,y=1,ext=extent(dat_stat))
-# plot(dat_stat,add=T,pch=3)
-# text(dat_stat,dat_stat$tID,cex=1.4)
-# legend("topright",legend=c("stations"), 
-#        cex=1.2, col="black",pch =3,bty="n")
-# 
-# dev.off()
-# 
-# #
-# #make a function later on?
-# 
-# #ADD selection function by ID
-# #list_selected_pix: by LOCATION ID
-# #
-# 
-# 
-# #colnames(data_df) <- list_selected_ID
-# #data_dz <- zoo(data_dz,idx)
-# 
-# plot(log(data_df$rainfall),log(data_df$COL_SCORE))
-# plot(data_df$rainfall,data_df$COL_SCORE)
-# 
-# ## IDENTIFY 2 inches events?
-
+#write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_",data_type,".txt")),sep=",")
 
 ############################ END OF SCRIPT #######################
