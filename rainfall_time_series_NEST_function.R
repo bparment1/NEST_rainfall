@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 04/11/2016
+#DATE MODIFIED: 04/12/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -187,7 +187,6 @@ plotting_measurements_and_rainfall <- function(i,dates_val,df_ts_pix,data_var,li
   data_pixel <- df_ts_pix[id_selected,]
   data_pixel <- as.data.frame(data_pixel)
   
- 
   pix_ts <- t(as.data.frame(subset(data_pixel,select=r_ts_name))) #can subset to range later
   #pix_ts <- subset(as.data.frame(pix_ts),select=r_ts_name)
   pix_ts <- (as.data.frame(pix_ts))
@@ -337,7 +336,7 @@ plotting_measurements_and_rainfall <- function(i,dates_val,df_ts_pix,data_var,li
   #[1] 0
   nb_zero <- sum((df2$rainfall==0)) #203
   #nb_NA <- sum(is.na(df2$COL_SCORE))
-  nb_NA <- sum(is.na(df2[[var_name]]))
+  nb_NA <- sum(is.na(df2[[var_name]])) #for ID 394 DMR it is 361 missing values for 2012!!
   ## Cumulated precip and lag?
   #Keep number of  0 for every year for rainfall
   #summarize by month
@@ -345,7 +344,7 @@ plotting_measurements_and_rainfall <- function(i,dates_val,df_ts_pix,data_var,li
   #Summarize by season...
   ## Threshold?
   station_summary_obj <- list(nb_zero,nb_NA,df2)
-  names(station_summary_obj) <- c("nb_zero","nb_NA","df_combined")
+  names(station_summary_obj) <- c("nb_zero_precip","nb_NA_var","df_combined")
   return(station_summary_obj)
 }
 
@@ -400,7 +399,7 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
   #list_selected_pix <- 11:14
   year_processed <- year(start_date)
-  write.table(df_ts_pix,paste("df_ts_pix_",year_processed,data_type,".txt",sep=""))
+  write.table(df_ts_pix,paste("df_ts_pix_",year_processed,"_",data_type,".txt",sep=""))
   #test <- merge(dat_stat,data,by="FID")
   #data_merged <- merge(data,dat_stat,by="FID",all=T,suffixes=c("_x","_y"))
   #data_merged <- merge(data,dat_stat,by="i",all=T,suffixes=c("","_y"))
@@ -423,7 +422,7 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   #data_subset[[coord_names[2]]] <- as.numeric(data_subset[[coord_names[2]]])
   
   #list_selected_ID <- unique(data_subset$LOCATION_ID)
-  browser()
+  #browser()
   #list_selected_ID <- unique(data_merged$LOCATION_ID)
   list_selected_ID <- unique(data_merged$ID_stat)
   
@@ -434,31 +433,70 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   #debug(plotting_measurements_and_rainfall)
   #i <- 1
   
-  test <- lapply(1:1,FUN=plotting_measurements_and_rainfall,
-                 df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F)
+  #test <- lapply(7:7,FUN=plotting_measurements_and_rainfall,
+  #               df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F)
   
   
   #Takes 5mintues or less on bpy50 laptop
   num_cores <- 4
   list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,
-                               df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F,
+                               df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,
+                               var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F,
                                mc.preschedule=FALSE,mc.cores= num_cores)
   #list_df_combined <- mclapply(1:4,FUN=plotting_measurements_and_rainfall,
-  #                             df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F,
+  #                             df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,
+  #                              var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F,
   #                             mc.preschedule=FALSE,mc.cores= num_cores)
+  browser()
+  list_df_combined_tmp <- list_df_combined 
+  list_df_combined <- remove_from_list_fun(list_df_combined)$list #remove data not predicted
+  #Add report on how many stations were lost??? In this case 356  for year 2012
+  #Find out more later...
+  #If more than 4 columns it means there is an error that will need to be fixed!!
+  list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
   
+  list_cleaning_df <- remove_df(list_cleaning_df,condition_val = 4)$list
+
+     
   save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",year_processed,"_",
                                                       out_suffix,".RData",sep="")))
-  
-  #l_png_files <- mclapply(1:length(unlist(lf_mean_mosaic)),FUN=plot_mosaic,
-  #                        list_param= list_param_plot_mosaic,
-  #                        mc.preschedule=FALSE,mc.cores = num_cores)
-  
-  list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
+
   data_df <- do.call(rbind,list_cleaning_df)
-  write.table(data_df,file= file.path(out_dir,paste("data_df","_",year_processed,"_",
+  write.table(data_df,file= file.path(out_dir,paste("data_df","_",year_processed,"_",data_type,
                                                       out_suffix,".txt",sep="")),sep=",")
   return(data_df)
+}
+
+remove_from_list_fun <- function(l_x,condition_class ="try-error"){
+  index <- vector("list",length(l_x))
+  for (i in 1:length(l_x)){
+    if (inherits(l_x[[i]],condition_class)){
+      index[[i]] <- FALSE #remove from list
+    }else{
+      index[[i]] <- TRUE
+    }
+  }
+  l_x<-l_x[unlist(index)] #remove from list all elements using subset
+  
+  obj <- list(l_x,index)
+  names(obj) <- c("list","valid")
+  return(obj)
+}
+
+remove_df <- function(l_x,condition_val = val){
+  index <- vector("list",length(l_x))
+  for (i in 1:length(l_x)){
+    if(ncol(l_x[[i]]) !=condition_val){
+      index[[i]] <- FALSE #remove from list
+    }else{
+      index[[i]] <- TRUE
+    }
+  }
+  l_x<-l_x[unlist(index)] #remove from list all elements using subset
+  
+  obj <- list(l_x,index)
+  names(obj) <- c("list","valid")
+  return(obj)
 }
 
 
