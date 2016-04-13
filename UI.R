@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 04/12/2016
+#DATE MODIFIED: 04/13/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -55,7 +55,9 @@ shinyUI(fluidPage(
       #selectInput("station", "Choose a station:", 
       #         choices = unique(data_df$LOCATION_ID)),  
       selectInput("station", "Choose a station:", 
-                  choices = unique(dataset$LOCATION_ID)),        
+                  choices = output$station_ID),  
+      #selectInput("station", "Choose a station:", 
+      #            choices = unique(input$dataset$LOCATION_ID)),        
       #numericInput("obs", "Number of observations to view:", 10),
       
       helpText("Note: the plot will show the specified",
@@ -73,6 +75,7 @@ shinyUI(fluidPage(
     mainPanel(
       plotOutput("plot_ts"),
       plotOutput("raster_map")
+      #verbatimTextOutput("summary")
     )#,
     
     # Show a summary of the dataset and an HTML table with the
