@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/12/2016 
-#DATE MODIFIED: 04/12/2016
+#DATE MODIFIED: 04/13/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -33,6 +33,7 @@ shinyServer(function(input, output) {
 
   #data_type <- input$dataset
   
+  
   #if(data_type=="MHB"){
   #  data_df <- data_df_MHB
   #  #rm(data_df_MHB)
@@ -50,16 +51,25 @@ shinyServer(function(input, output) {
            "MHB" = data_df_MHB,
            "DMR" = data_df_DMR)
   })
-  #output$data_df <- reactive({
+  #$data_df <- reactive({
   #  data_df<- datasetInput()
   #})
-  output$dataset <- reactive({
-    dataset<- datasetInput()
+  output$data_df <- reactive({
+    data_df<- datasetInput()
+  })
+  output$station_ID <- reactive({
+    data_df <- datasetInput()
+    station_ID <- unique(data_df$LOCATION_ID)
+    station_ID
   })
   
+  #0utput$dataset <- reactive({
+  #  dataset<- datasetInput()
+  #})
+  
   output$summary <- renderPrint({
-    dataset <- datasetInput()
-    summary(dataset)
+    data_df <- datasetInput()
+    summary(data_df)
   })
   
   ## First prepare plot for the station profile!!
