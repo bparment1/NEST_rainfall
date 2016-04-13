@@ -50,8 +50,16 @@ shinyServer(function(input, output) {
            "MHB" = data_df_MHB,
            "DMR" = data_df_DMR)
   })
-  output$data_df <- reactive({
-    datasetInput()
+  #output$data_df <- reactive({
+  #  data_df<- datasetInput()
+  #})
+  output$dataset <- reactive({
+    dataset<- datasetInput()
+  })
+  
+  output$summary <- renderPrint({
+    dataset <- datasetInput()
+    summary(dataset)
   })
   
   ## First prepare plot for the station profile!!
@@ -149,13 +157,13 @@ shinyServer(function(input, output) {
     
     if(input$dataset=="MHB"){
       dat_stat <- dat_stat_location_MHB
-      rm(dat_stat_location_MHB)
-      rm(dat_stat_location_DMR)
+      #rm(dat_stat_location_MHB)
+      #rm(dat_stat_location_DMR)
     }
     if(input$dataset=="DMR"){
       dat_stat <- dat_stat_location_DMR
-      rm(dat_stat_location_MHB)
-      rm(dat_stat_location_DMR)
+      #rm(dat_stat_location_MHB)
+      #rm(dat_stat_location_DMR)
     }
     
     date_str <- paste0(year_processed,"-01-01") #change this later!!
