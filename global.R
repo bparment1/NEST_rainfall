@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 04/12/2016
+#DATE MODIFIED: 04/13/2016
 #Version: 5
 #PROJECT: NEST beach closures            
 
@@ -56,16 +56,16 @@ library(shiny)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
+#function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
 #script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
 #script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03" #path to script #PARAM 
-script_path <- "/home/benoit/data/NEST_stations_s05" #on SSI server
-setwd(script_path)
+#script_path <- "/home/benoit/data/NEST_stations_s05" #on SSI server
+#setwd(script_path)
 #script_path <- "." #path to script #PARAM 
 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
-source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
+#source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
 
 ##### Functions used in this script 
 
@@ -91,12 +91,12 @@ load_obj <- function(f){
 
 #####  Parameters and argument set up ###########
 
-#in_dir <- "/home/bparmentier/Google Drive/NEST/" #local bpy50 , param 1
-in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s05"
+#in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s05" #local bpy50 , param 1
+#in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s05"
 #in_dir <- "./NEST_stations_s05" #NCEAS, param 
 #in_dir <- "/home/benoit/data/NEST_stations_s05" #NCEAS, param 
+in_dir <- "."
 
-#in_dir_rainfall <- "/home/bparmentier/Google Drive/NEST_Data/"
 
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
 proj_str<- CRS_WGS84 #param 2
@@ -128,6 +128,7 @@ start_date <- "2012-01-01" #PARAM 12,  this is the default value, use user defin
 end_date <- "2012-12-31" #PARAM 13,  this is the default value, use user define otherwise
 var_name_DMR <- "COL_SCORE" #PARAM 14
 var_name_MHB <- "CONCENTRATION" #PARAM 14, MHB data, need to add DMR
+var_name <- var_name_MHB
 
 var_ID <- "LOCATION_ID" #PARAM 15
 year_processed <- "2012" #PARAM 16
@@ -176,8 +177,10 @@ list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
 
 ##Should we read table in?
 data_df_MHB <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
-data_df_DMR <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
+data_df_DMR <- read.table(station_measurements_DMR_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 
+data_df <- data_df_MHB #default dataset!!
+#data_df_DMR
 dat_stat_location_MHB <- readOGR("./data",sub(".shp","",dat_stat_location_MHB_fname))
 dat_stat_location_DMR <- readOGR("./data",sub(".shp","",dat_stat_location_DMR_fname))
 
