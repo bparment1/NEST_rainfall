@@ -114,16 +114,16 @@ rainfall_dir <- "./data" #PARAM 10
 #station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
 #station_data_fname <- file.path("data", "MHB_data_2006-2015.csv") #PARAM 11
 
-station_measurements_MHB_data_fname <- file.path("data", "data_df_rainfall_and_measurements_MHB.txt") #PARAM 11 
+#station_measurements_MHB_data_fname <- file.path("data", "data_df_rainfall_and_measurements_MHB.txt") #PARAM 11 
 #This will change
-station_measurements_DMR_data_fname <- file.path("data", "data_df_rainfall_and_measurements_DMR.txt") #PARAM 11 
-#station_measurements_DMR_data_fname <- list.files(path=file.path(in_dir,"data"),
-#                                                  pattern="data_df_combined_.*._DMR.txt",
-#                                                  full.names=T) #PARAM 11 
-#station_measurements_MHB_data_fname <- list.files(path=file.path(in_dir,"data"),
-#                                                  pattern="data_df_.*._NEST_prism_03272016.txt",
-#                                                  full.names=T) #PARAM 11 
-
+#station_measurements_DMR_data_fname <- file.path("data", "data_df_rainfall_and_measurements_DMR.txt") #PARAM 11 
+station_measurements_DMR_data_fname <- list.files(path=file.path(in_dir,"data"),
+                                                  pattern="data_df_combined_.*._DMR.txt",
+                                                  full.names=T) #PARAM 11 
+station_measurements_MHB_data_fname <- list.files(path=file.path(in_dir,"data"),
+                                                  pattern="data_df_.*._NEST_prism_MHB.txt",
+                                                  full.names=T) #PARAM 11 
+#data_df_2015_NEST_prism_MHB.txt
 start_date <- "2012-01-01" #PARAM 12,  this is the default value, use user define otherwise
 end_date <- "2012-12-31" #PARAM 13,  this is the default value, use user define otherwise
 var_name_DMR <- "COL_SCORE" #PARAM 14
@@ -176,17 +176,17 @@ list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
 #write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_",data_type,".txt")),sep=",")
 
 ##Should we read table in?
-data_df_MHB <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
-data_df_DMR <- read.table(station_measurements_DMR_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
+#data_df_MHB <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
+#data_df_DMR <- read.table(station_measurements_DMR_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 
-data_df <- data_df_MHB #default dataset!!
+#data_df <- data_df_MHB #default dataset!!
 #data_df_DMR
 dat_stat_location_MHB <- readOGR("./data",sub(".shp","",dat_stat_location_MHB_fname))
 dat_stat_location_DMR <- readOGR("./data",sub(".shp","",dat_stat_location_DMR_fname))
 
 ### Part 2: read in raster rainfall data and SMA zones
 
-SMAZones <- readOGR("./data",sub(".shp","",SMAZones_fname))
+#SMAZones <- readOGR("./data",sub(".shp","",SMAZones_fname))
 
 #for(i in 1:length(list_dir_rainfall)){
 #  in_dir_rst <- list_dir_rainfall[11]
