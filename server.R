@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/12/2016 
-#DATE MODIFIED: 04/13/2016
+#DATE MODIFIED: 04/17/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -22,6 +22,7 @@ library(datasets)
 # selected dataset
 shinyServer(function(input, output) {
   
+  
   # Return the requested dataset
   #datasetInput <- reactive({
   #  switch(input$dataset,
@@ -31,6 +32,44 @@ shinyServer(function(input, output) {
   #})
   #var_ID <- "LOCATION_ID"
 
+  datasetInput <- reactive({
+    #inputs:
+    data_type <- input$dataset
+    start_date <-input$dates[1]
+    end_date <-input$dates[2]
+    
+    #get years processed
+    year_processed_start <- year(start_date) #make this work for end dates too!!
+    year_processed_end <- year(end_date) #make this work for end dates too!!
+    
+    list_year_processed <- year_processed_start:year_processed_end
+    list_tb <- mclapply(1:length(list_year_processed),function(i){
+      filename_str <- file.path("./data",paste0("data_df_combined_",list_year_processed[i],"_" ,data_type,".txt"));
+      tb <- read.table(filename_str,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
+    },mc.preschedule=FALSE,mc.cores = num_cores)
+    data_df<- do.call(rbind,list_tb)
+    data_df
+  })
+
+  #dataset <- reactive({
+  #  filename <- paste0("data_", input$date, ".Rdata")
+  #  load(filename)
+  #})
+  
+  #datasetInput <- reactive({
+  #  data_type <- input$dataset
+  #  if(data_type=="MHB"){
+  #   data_df <- data_df_MHB
+  #   #rm(data_df_MHB)
+  #   #rm(data_df_DMR)
+  #  }
+  #  if(data_type=="DMR"){
+  #   data_df <- data_df_DMR
+  #   #rm(data_df_MHB)
+  #  #rm(data_df_DMR)
+  # }
+  #  data_df
+  #})
   #data_type <- input$dataset
   
   
@@ -46,22 +85,22 @@ shinyServer(function(input, output) {
   #}
   
   ##Reactive function to return desired dataset
-  datasetInput <- reactive({
-    switch(input$dataset,
-           "MHB" = data_df_MHB,
-           "DMR" = data_df_DMR)
-  })
-  #$data_df <- reactive({
-  #  data_df<- datasetInput()
+  #datasetInput <- reactive({
+  #  switch(input$dataset,
+  #         "MHB" = data_df_MHB,
+  #         "DMR" = data_df_DMR)
   #})
-  output$data_df <- reactive({
+  data_df <- reactive({
     data_df<- datasetInput()
   })
-  output$station_ID <- reactive({
-    data_df <- datasetInput()
-    station_ID <- unique(data_df$LOCATION_ID)
-    station_ID
-  })
+  #output$data_df <- reactive({
+  #  data_df<- datasetInput()
+  #})
+  #output$station_ID <- reactive({
+  #  data_df <- datasetInput()
+  #  station_ID <- unique(data_df$LOCATION_ID)
+  #  station_ID
+  #})
   
   #0utput$dataset <- reactive({
   #  dataset<- datasetInput()
