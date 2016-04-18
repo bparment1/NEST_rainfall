@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 04/13/2016
+#DATE MODIFIED: 04/18/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -38,8 +38,11 @@ shinyUI(fluidPage(
   sidebarLayout(
     
     sidebarPanel(
-      selectInput("dataset", "Choose a dataset:", 
-                  choices = c("MHB", "DMR")),
+      #dateRangeInput("dates", label = h3("Date range")),
+      dateRangeInput("dates", start=start_date,end=end_date,label = h3("Date range")),
+      
+      #selectInput("dataset", "Choose a dataset:", 
+      #            choices = c("MHB", "DMR")),
       #if(dataset=="MHB"){
       #  station_ID <- data_df_MHB$LOCATION_ID
       #}
@@ -70,8 +73,6 @@ shinyUI(fluidPage(
       #         "number of observations, the summary will still be based",
       #         "on the full dataset."),
       
-      #dateRangeInput("dates", label = h3("Date range")),
-      dateRangeInput("dates", start=start_date,end=end_date,label = h3("Date range")),
       submitButton("Update View")
     ),
     
