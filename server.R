@@ -67,9 +67,9 @@ shinyServer(function(input, output) {
   # Check boxes
   output$choose_columns <- renderUI({
     # If missing input, return to avoid error later in function
-    if(is.null(input$dataset))
-      #return()
-      data_df <- get(data_df)
+    #if(is.null(input$dataset))
+    #  #return()
+    #  data_df <- get(data_df)
     #browser()
     # Get the data set with the appropriate name
     #dat <- get(input$dataset)
@@ -84,7 +84,7 @@ shinyServer(function(input, output) {
     #list_station <- c("17","")
     list_location_ID <- unique(data_df$LOCATION_ID)
     selectInput("station", "Choose a station:", 
-             choices = list_location_ID) 
+             choices = list_location_ID,selected= "4" ) 
   })
   #dataset <- reactive({
   #  filename <- paste0("data_", input$date, ".Rdata")
@@ -153,7 +153,7 @@ shinyServer(function(input, output) {
     #cars2 <- cars + rnorm(nrow(cars))
     #plot(cars2)
     #plot_ts <- 
-    browser()
+    #browser()
     #data_type <- input$dataset #this is null in the first run of the app
     if(is.null(input$dataset)){
       data_type <- "MHB"
@@ -245,7 +245,7 @@ shinyServer(function(input, output) {
     
     start_date <-input$dates[1]
     end_date <-input$dates[2]
-    
+    #browser()
     year_processed <- year(start_date) #make this work for end dates too!!
     in_dir_rst <- grep(paste0("prism_ppt_",year_processed), list_dir_rainfall,value=T)
     r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
@@ -254,13 +254,19 @@ shinyServer(function(input, output) {
     if (convert_to_inches==TRUE){
       r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
     }
+    ### Deal with bug, length zero argument below
+    if(is.null(input$dataset)){
+      data_type <- "MHB"
+    }else{
+      data_type <- input$dataset
+    }
     
-    if(input$dataset=="MHB"){
+    if(data_type=="MHB"){
       dat_stat <- dat_stat_location_MHB
       #rm(dat_stat_location_MHB)
       #rm(dat_stat_location_DMR)
     }
-    if(input$dataset=="DMR"){
+    if(data_type=="DMR"){
       dat_stat <- dat_stat_location_DMR
       #rm(dat_stat_location_MHB)
       #rm(dat_stat_location_DMR)
