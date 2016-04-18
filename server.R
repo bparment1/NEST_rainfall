@@ -32,21 +32,28 @@ shinyServer(function(input, output) {
   #})
   #var_ID <- "LOCATION_ID"
   #data_sets <- c("mtcars", "morley", "rock")
-  data_sets <- data_type
+  data_sets <- c("MHB","DMR")
   output$choose_dataset <- renderUI({
-    selectInput("dataset", "Data set", as.list(data_sets))
+    selectInput("dataset", "Data set", as.list(data_sets),selected="MHB")
   })
   
   datasetInput <- reactive({
     #inputs:
-    data_type <- input$dataset
+    #data_type <- input$dataset
+    if(is.null(input$dataset)){
+      data_type <- "MHB"
+    }else{
+      data_type <- input$dataset
+    }
+    #data_type <- input$choose_dataset
     start_date <-input$dates[1]
     end_date <-input$dates[2]
     
     #get years processed
     year_processed_start <- year(start_date) #make this work for end dates too!!
     year_processed_end <- year(end_date) #make this work for end dates too!!
-    
+    #browser()
+    #For faster reading of the data...multicore and reduce data in memory by on the fly loading of data
     list_year_processed <- year_processed_start:year_processed_end
     list_tb <- mclapply(1:length(list_year_processed),function(i){
       filename_str <- file.path("./data",paste0("data_df_combined_",list_year_processed[i],"_" ,data_type,".txt"));
@@ -54,25 +61,30 @@ shinyServer(function(input, output) {
     },mc.preschedule=FALSE,mc.cores = num_cores)
     data_df<- do.call(rbind,list_tb)
     data_df
+    #browser()
   })
 
   # Check boxes
   output$choose_columns <- renderUI({
     # If missing input, return to avoid error later in function
     if(is.null(input$dataset))
-      return()
-    
+      #return()
+      data_df <- get(data_df)
+    #browser()
     # Get the data set with the appropriate name
     #dat <- get(input$dataset)
     data_df <- datasetInput()
     #colnames <- names(dat)
-    
+    #Warning: Error in [[: subscript out of bounds
     # Create the checkboxes and select them all by default
     #checkboxGroupInput("columns", "Choose columns", 
     #                   choices  = colnames,
     #                   selected = colnames)
+    #
+    #list_station <- c("17","")
+    list_location_ID <- unique(data_df$LOCATION_ID)
     selectInput("station", "Choose a station:", 
-             choices = unique(data_df$LOCATION_ID)) 
+             choices = list_location_ID) 
   })
   #dataset <- reactive({
   #  filename <- paste0("data_", input$date, ".Rdata")
@@ -141,8 +153,14 @@ shinyServer(function(input, output) {
     #cars2 <- cars + rnorm(nrow(cars))
     #plot(cars2)
     #plot_ts <- 
-    data_type <- input$dataset
-    
+    browser()
+    #data_type <- input$dataset #this is null in the first run of the app
+    if(is.null(input$dataset)){
+      data_type <- "MHB"
+    }else{
+      data_type <- input$dataset
+    }
+    data_df <- datasetInput()
     #if(data_type=="MHB"){
     #  data_df <- data_df_MHB
     #  #rm(data_df_MHB)
@@ -154,7 +172,12 @@ shinyServer(function(input, output) {
     #  #rm(data_df_DMR)
     #}
     
-    id_name<-input$station
+    #id_name<-input$station #is null in the first run
+    if(is.null(input$station)){
+      id_name <- "4" # station 4 in default data "MHB"
+    }else{
+      id_name <- input$station
+    }
     id_selected <- data_df[[var_ID]]==id_name
     
     ### Not get the data from the time series
@@ -192,20 +215,25 @@ shinyServer(function(input, output) {
                                                     " for station ",id_name))
     
     #abline(h=threshold_val,col="green")
-    par(new=TRUE)              # key: ask for new plot without erasing old
-    #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
-    #plot(log(df2$COL_SCORE),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
-    plot(log(df2[[var_name]]),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
-    
-    #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
-    legend("topleft",legend=c("stations"), 
-           cex=1.2,col="red",pch =10,bty="n")
-    
-    axis(4,cex=1.2)
-    mtext(4, text = "coliform scores", line = 3)
-    #title(paste("Station time series",id_name,sep=" "))
-    
-    
+    ##Added to deal with bugs ylim, in some cases, tere are no bacteria measurements...then skip
+    nb_na <- sum(is.na(df2[[var_name]]))
+    if(nb_na<length(df2[[var_name]])){
+      par(new=TRUE)              # key: ask for new plot without erasing old
+      #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
+      #plot(log(df2$COL_SCORE),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
+      
+      plot(log(df2[[var_name]]),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
+      
+      #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
+      legend("topleft",legend=c("stations"), 
+             cex=1.2,col="red",pch =10,bty="n")
+      
+      axis(4,cex=1.2)
+      mtext(4, text = "bacteria scores", line = 3)
+      #title(paste("Station time series",id_name,sep=" "))
+    }else{
+      mtext("No bacteria measurements for the time period selected")
+    }
   })
   
   output$raster_map <- renderPlot({
