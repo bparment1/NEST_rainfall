@@ -31,7 +31,12 @@ shinyServer(function(input, output) {
   #         "cars" = cars)
   #})
   #var_ID <- "LOCATION_ID"
-
+  #data_sets <- c("mtcars", "morley", "rock")
+  data_sets <- data_type
+  output$choose_dataset <- renderUI({
+    selectInput("dataset", "Data set", as.list(data_sets))
+  })
+  
   datasetInput <- reactive({
     #inputs:
     data_type <- input$dataset
@@ -51,6 +56,24 @@ shinyServer(function(input, output) {
     data_df
   })
 
+  # Check boxes
+  output$choose_columns <- renderUI({
+    # If missing input, return to avoid error later in function
+    if(is.null(input$dataset))
+      return()
+    
+    # Get the data set with the appropriate name
+    #dat <- get(input$dataset)
+    data_df <- datasetInput()
+    #colnames <- names(dat)
+    
+    # Create the checkboxes and select them all by default
+    #checkboxGroupInput("columns", "Choose columns", 
+    #                   choices  = colnames,
+    #                   selected = colnames)
+    selectInput("station", "Choose a station:", 
+             choices = unique(data_df$LOCATION_ID)) 
+  })
   #dataset <- reactive({
   #  filename <- paste0("data_", input$date, ".Rdata")
   #  load(filename)
