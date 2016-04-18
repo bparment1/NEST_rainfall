@@ -166,6 +166,12 @@ setwd(in_dir)
 list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
 #remove non relevant directories
 list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
+#get years processed: these are the default values
+year_processed_start <- year(start_date) #make this work for end dates too!!
+year_processed_end <- year(end_date) #make this work for end dates too!!
+
+#For faster reading of the data...multicore and reduce data in memory by on the fly loading of data
+list_year_processed <- year_processed_start:year_processed_end
 
 #### Part 1: read in combined information by stations ####
 
@@ -178,7 +184,10 @@ list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
 ##Should we read table in?
 #data_df_MHB <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
 #data_df_DMR <- read.table(station_measurements_DMR_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
+data_df <- read.table("./data/data_df_rainfall_and_measurements_MHB.txt",sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
+list_location_ID <- unique(data_df$LOCATION_ID)
 
+#
 #data_df <- data_df_MHB #default dataset!!
 #data_df_DMR
 dat_stat_location_MHB <- readOGR("./data",sub(".shp","",dat_stat_location_MHB_fname))
