@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/12/2016 
-#DATE MODIFIED: 04/17/2016
+#DATE MODIFIED: 04/18/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -153,7 +153,7 @@ shinyServer(function(input, output) {
     #cars2 <- cars + rnorm(nrow(cars))
     #plot(cars2)
     #plot_ts <- 
-    #browser()
+    browser()
     #data_type <- input$dataset #this is null in the first run of the app
     if(is.null(input$dataset)){
       data_type <- "MHB"
@@ -161,17 +161,12 @@ shinyServer(function(input, output) {
       data_type <- input$dataset
     }
     data_df <- datasetInput()
-    #if(data_type=="MHB"){
-    #  data_df <- data_df_MHB
-    #  #rm(data_df_MHB)
-    #  #rm(data_df_DMR)
-    #}
-    #if(data_type=="DMR"){
-    #  data_df <- data_df_DMR
-    #  #rm(data_df_MHB)
-    #  #rm(data_df_DMR)
-    #}
-    
+    if(data_type=="MHB"){
+      var_name <- var_name_MHB
+    }else{
+      var_name <- var_name_DMR
+    }
+
     #id_name<-input$station #is null in the first run
     if(is.null(input$station)){
       id_name <- "4" # station 4 in default data "MHB"
@@ -248,6 +243,12 @@ shinyServer(function(input, output) {
     #browser()
     year_processed <- year(start_date) #make this work for end dates too!!
     in_dir_rst <- grep(paste0("prism_ppt_",year_processed), list_dir_rainfall,value=T)
+    #This maybe fast in a brick??
+    #maybe use glob from Sys instead
+    #  lf_mosaic <- lapply(1:length(day_to_mosaic),FUN=function(i){
+    #searchStr = paste(in_dir_tiles_tmp,"/*/",year_processed,"/gam_CAI_dailyTmax_predicted_",pred_mod_name,"*",day_to_mosaic[i],"*.tif",sep="")
+    #print(searchStr)
+    #Sys.glob(searchStr)
     r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
     
     
