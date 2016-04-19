@@ -1,17 +1,20 @@
 ##############################################  NEST Beach closure project  #######################################
 #################################  Shiny Application for exploration of station measurements  #######################################
 #This script explores the correlation between rainfall events and beach closures due to bacteria outbreaks in Maine.
-#The script uses time series analyes from R. 
+#This is the global.R script. It uses time series processed earlier in R. 
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 04/13/2016
+#DATE MODIFIED: 04/19/2016
 #Version: 5
 #PROJECT: NEST beach closures            
 
 #
-#COMMENTS: - Adding DMR data to MHB   
-#          - 
+#COMMENTS: - Fixing problem with extent of input stations data 
+#          - Adding reference raster to set the extent
+#          - Fixing error message "xlim" with station EHO27.00 for DMR data
+#          - Adding automatically generated output suffix based on date
+#
 #TO DO:
 
 #################################################################################################
@@ -45,9 +48,9 @@ library(shiny)
 #library(shiny)
 #runExample()
 #runExample("07_widgets")
-#Run on shinyapps.io
+#Run on shinyapps.io 
 #First navigate to the location of the app:
-#/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03
+#/home/bparmentier/Google Drive/NEST/NEST_stations_s05/
 #Note that all data and files referenced in the app should be location in the folder above
 #see shinyio
 #http://shiny.rstudio.com/articles/shinyapps.html
@@ -56,16 +59,17 @@ library(shiny)
 
 ###### Functions used in this script sourced from other files
 
-#function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
+script_path <- "." #path to script #PARAM 
+
 #script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
-#script_path <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s03" #path to script #PARAM 
+#script_path <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s05/" #path to script #PARAM 
 #script_path <- "/home/benoit/data/NEST_stations_s05" #on SSI server
 #setwd(script_path)
-#script_path <- "." #path to script #PARAM 
 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
-#source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
+source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
 
 ##### Functions used in this script 
 
@@ -95,7 +99,7 @@ load_obj <- function(f){
 #in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s05"
 #in_dir <- "./NEST_stations_s05" #NCEAS, param 
 #in_dir <- "/home/benoit/data/NEST_stations_s05" #NCEAS, param 
-in_dir <- "."
+in_dir <- "." #Use current directory, run locally
 
 
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
@@ -105,12 +109,16 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_03282016" #output suffix for the files and ouptu folder #PARAM 7
+#out_suffix <-"NEST_prism_03282016" #output suffix for the files and ouptu folder #PARAM 7
+#out_suffix <- paste0(as.Date(Sys.Date(),format="%Y%m%d"))
+out_suffix <- paste0("NEST_shiny_",format(Sys.Date(),"%Y%m%d"))
+
 create_out_dir_param=FALSE #PARAM8
 num_cores <- 4 #PARAM 9
 
 #rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
 rainfall_dir <- "./data" #PARAM 10
+reg_ref_rast_name <- "./data/PRISM_ppt_stable_4kmD2_20111222_crop_proj_reg.tif"
 #station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
 #station_data_fname <- file.path("data", "MHB_data_2006-2015.csv") #PARAM 11
 
@@ -172,7 +180,17 @@ year_processed_end <- year(end_date) #make this work for end dates too!!
 
 #For faster reading of the data...multicore and reduce data in memory by on the fly loading of data
 list_year_processed <- year_processed_start:year_processed_end
+year_processed <- year(start_date) #make this work for end dates too!!
+in_dir_rst <- grep(paste0("prism_ppt_",year_processed), list_dir_rainfall,value=T)
+#This maybe fast in a brick??
+#maybe use 
+#r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
 
+#r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
+
+ref_rast <- raster(reg_ref_rast_name) 
+reg_poly <- create_polygon_from_extent(ref_rast) #use this to clean up station coordinates??
+  
 #### Part 1: read in combined information by stations ####
 
 #list_df_fname <- list.files(path=out_dir,pattern="data_df_.*._NEST_prism_03272016.txt",full.names=T)
