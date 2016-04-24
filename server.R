@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/12/2016 
-#DATE MODIFIED: 04/18/2016
+#DATE MODIFIED: 04/25/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -153,7 +153,7 @@ shinyServer(function(input, output) {
     #cars2 <- cars + rnorm(nrow(cars))
     #plot(cars2)
     #plot_ts <- 
-    browser()
+    #browser()
     #data_type <- input$dataset #this is null in the first run of the app
     if(is.null(input$dataset)){
       data_type <- "MHB"
@@ -237,19 +237,34 @@ shinyServer(function(input, output) {
     #else if (input$variable == "Map2")
     #  data <- raster("file2.asc")
     #levelplot(data, margin=FALSE, par.settings=GrTheme)
-    
-    start_date <-input$dates[1]
-    end_date <-input$dates[2]
     #browser()
-    year_processed <- year(start_date) #make this work for end dates too!!
-    in_dir_rst <- grep(paste0("prism_ppt_",year_processed), list_dir_rainfall,value=T)
+    r_start_date <-input$r_dates[1]
+    r_end_date <-input$r_dates[2]
+    #browser()
+    
+    year_processed_start <- year(r_start_date) #make this work for end dates too!!
+    year_processed_end <- year(r_end_date) #make this work for end dates too!!
+    
+    #For faster reading of the data...multicore and reduce data in memory by on the fly loading of data
+    list_year_processed <- year_processed_start:year_processed_end
+    #year_processed <- year(start_date) #make this work for end dates too!!
+    #in_dir_rst <- grep(paste0("prism_ppt_",year_processed), list_dir_rainfall,value=T)
+    l_in_dir_rst <- unlist(lapply(list_year_processed, FUN=function(x){grep(paste0("prism_ppt_",x), list_dir_rainfall,value=T)}))
+    r_rainfall_filename <- (mixedsort(list.files(pattern="*.tif",path=l_in_dir_rst,full.names=T))) #rainfall time series stack
+    
+    #r_year_processed <- year(r_start_date) #make this work for end dates too!!
+    #in_dir_rst <- grep(paste0("prism_ppt_",r_year_processed), list_dir_rainfall,value=T)
     #This maybe fast in a brick??
     #maybe use glob from Sys instead
     #  lf_mosaic <- lapply(1:length(day_to_mosaic),FUN=function(i){
     #searchStr = paste(in_dir_tiles_tmp,"/*/",year_processed,"/gam_CAI_dailyTmax_predicted_",pred_mod_name,"*",day_to_mosaic[i],"*.tif",sep="")
     #print(searchStr)
     #Sys.glob(searchStr)
-    r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
+    #use option quick to make the stack creation faster!! there is no check on the extent and projection
+    r_rainfall <- stack(r_rainfall_filename,quick=T,filename="r_rainfall.tif") #rainfall time series stack, maybe use a temp file??
+    #writeRaster(r_rainfall, filename="r_rainfall.tif", overwrite=TRUE) #Takes more than 3 minues to write to file so stopped it
+    
+    #r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
     
     
     if (convert_to_inches==TRUE){
@@ -299,3 +314,11 @@ shinyServer(function(input, output) {
   #  head(datasetInput(), n = input$obs)
   #})
 })
+
+###################### END OF SCRIPT ##########################
+#Find out about animations
+#http://moc.environmentalinformatics-marburg.de/doku.php?id=courses:msc:data-management:code-examples:dm-ce-12-02
+#http://search.r-project.org/library/rglwidget/html/playwidget.html
+#http://stackoverflow.com/questions/27194893/reset-animation-in-shiny-r-studio
+#http://shiny.rstudio.com/articles/action-buttons.html
+#http://www.r-bloggers.com/shiny-module-design-patterns-pass-module-inputs-to-other-modules/?utm_source=feedburner&utm_medium=email&utm_campaign=Feed%3A+RBloggers+%28R+bloggers%29
