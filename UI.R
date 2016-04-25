@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 04/18/2016
+#DATE MODIFIED: 04/25/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -39,7 +39,8 @@ shinyUI(fluidPage(
     
     sidebarPanel(
       #dateRangeInput("dates", label = h3("Date range")),
-      dateRangeInput("dates", start=start_date,end=end_date,label = h3("Date range")),
+      dateRangeInput("dates", start=start_date,end=end_date,label = h3("Date range bacteria measurements")),
+      dateRangeInput("r_dates", start=start_date_r,end=end_date_r,label = h3("Date range rainfall")),
       
       #selectInput("dataset", "Choose a dataset:", 
       #            choices = c("MHB", "DMR")),
