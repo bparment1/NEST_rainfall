@@ -75,6 +75,12 @@ shinyUI(fluidPage(
       #         "on the full dataset."),
       
       submitButton("Update View")
+      
+      actionButton("goButton", "Go!"),
+      actionButton("reset", "Reset"),
+      sliderInput("myvar", label=h6("Variability of cost"),min=0, max=50, value=10)   
+      sliderInput("myvar", label=h6("Variability of cost"),min=0, max=50, value=10)   
+      
     ),
     
     mainPanel(
