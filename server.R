@@ -20,7 +20,7 @@ library(datasets)
 
 # Define server logic required to summarize and view the 
 # selected dataset
-shinyServer(function(input, output) {
+shinyServer(function(input, output,session) {
   
   
   # Return the requested dataset
@@ -34,7 +34,7 @@ shinyServer(function(input, output) {
   #data_sets <- c("mtcars", "morley", "rock")
   data_sets <- c("MHB","DMR")
   output$choose_dataset <- renderUI({
-    selectInput("dataset", "Data set", as.list(data_sets),selected="MHB")
+    selectInput("dataset", "Dataset", as.list(data_sets),selected="MHB")
   })
   
   datasetInput <- reactive({
@@ -141,11 +141,6 @@ shinyServer(function(input, output) {
   #  dataset<- datasetInput()
   #})
   
-  output$summary <- renderPrint({
-    data_df <- datasetInput()
-    summary(data_df)
-  })
-  
   ## First prepare plot for the station profile!!
   output$plot_ts <- renderPlot({
     #input$newplot
@@ -160,7 +155,10 @@ shinyServer(function(input, output) {
     }else{
       data_type <- input$dataset
     }
+    
+    #Get the relevant data
     data_df <- datasetInput()
+    
     if(data_type=="MHB"){
       var_name <- var_name_MHB
     }else{
@@ -231,6 +229,11 @@ shinyServer(function(input, output) {
     }
   })
   
+  output$summary <- renderPrint({
+    data_df <- datasetInput()
+    summary(data_df)
+  })
+  
   output$raster_map <- renderPlot({
     #if (input$date_in == "Map1")
     #  data <- raster("file1.asc")
@@ -263,7 +266,6 @@ shinyServer(function(input, output) {
     #use option quick to make the stack creation faster!! there is no check on the extent and projection
     r_rainfall <- stack(r_rainfall_filename,quick=T,filename="r_rainfall.tif") #rainfall time series stack, maybe use a temp file??
     #writeRaster(r_rainfall, filename="r_rainfall.tif", overwrite=TRUE) #Takes more than 3 minues to write to file so stopped it
-    
     #r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
     
     
