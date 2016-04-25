@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/10/2016 
-#DATE MODIFIED: 04/19/2016
+#DATE MODIFIED: 04/25/2016
 #Version: 5
 #PROJECT: NEST beach closures            
 
@@ -137,6 +137,10 @@ end_date <- "2012-12-31" #PARAM 13,  this is the default value, use user define 
 var_name_DMR <- "COL_SCORE" #PARAM 14
 var_name_MHB <- "CONCENTRATION" #PARAM 14, MHB data, need to add DMR
 var_name <- var_name_MHB
+
+##Raster start date
+start_date_r <- start_date #set the same start date for now
+end_date_r <- end_date #set the same start date for now
 
 var_ID <- "LOCATION_ID" #PARAM 15
 year_processed <- "2012" #PARAM 16
