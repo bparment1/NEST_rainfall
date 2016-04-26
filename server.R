@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 03/12/2016 
-#DATE MODIFIED: 04/25/2016
+#DATE MODIFIED: 04/26/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -86,11 +86,7 @@ shinyServer(function(input, output,session) {
     selectInput("station", "Choose a station:", 
              choices = list_location_ID,selected= "4" ) 
   })
-  #dataset <- reactive({
-  #  filename <- paste0("data_", input$date, ".Rdata")
-  #  load(filename)
-  #})
-  
+
   #datasetInput <- reactive({
   #  data_type <- input$dataset
   #  if(data_type=="MHB"){
@@ -106,6 +102,8 @@ shinyServer(function(input, output,session) {
   #  data_df
   #})
   #data_type <- input$dataset
+  ##try
+  #data_type[1]
   
   
   #if(data_type=="MHB"){
@@ -143,11 +141,6 @@ shinyServer(function(input, output,session) {
   
   ## First prepare plot for the station profile!!
   output$plot_ts <- renderPlot({
-    #input$newplot
-    # Add a little noise to the cars data
-    #cars2 <- cars + rnorm(nrow(cars))
-    #plot(cars2)
-    #plot_ts <- 
     #browser()
     #data_type <- input$dataset #this is null in the first run of the app
     if(is.null(input$dataset)){
@@ -215,7 +208,7 @@ shinyServer(function(input, output,session) {
       #plot(x,y,type="l",col=t_col[k],xlab="",ylab="",lty="dotted",axes=F) #plotting fusion profile
       #plot(log(df2$COL_SCORE),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
       
-      plot(log(df2[[var_name]]),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
+      plot(log10(df2[[var_name]]),pch=10,cex=2.5,col="red", axes=F,ylab="",xlab="")
       
       #points(d_z2$COL_SCORE,col="red",pch=10,cex=2)
       legend("topleft",legend=c("stations"), 
@@ -235,11 +228,7 @@ shinyServer(function(input, output,session) {
   })
   
   output$raster_map <- renderPlot({
-    #if (input$date_in == "Map1")
-    #  data <- raster("file1.asc")
-    #else if (input$variable == "Map2")
-    #  data <- raster("file2.asc")
-    #levelplot(data, margin=FALSE, par.settings=GrTheme)
+
     #browser()
     r_start_date <-input$r_dates[1]
     r_end_date <-input$r_dates[2]
@@ -268,7 +257,6 @@ shinyServer(function(input, output,session) {
     #writeRaster(r_rainfall, filename="r_rainfall.tif", overwrite=TRUE) #Takes more than 3 minues to write to file so stopped it
     #r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
     
-    
     if (convert_to_inches==TRUE){
       r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
     }
@@ -289,22 +277,20 @@ shinyServer(function(input, output,session) {
       #rm(dat_stat_location_MHB)
       #rm(dat_stat_location_DMR)
     }
-    
-    date_str <- paste0(year_processed,"-01-01") #change this later!!
-    plot(r_rainfall,y=1,ext=extent(dat_stat),main=paste0("Raster image for ",date_str))
+    #browser()
+    #date_str <- paste0(year_processed,"-01-01") #change this later!!
+    date_str <- input$date_range
+    diff_date <- as.numeric((date_str - r_start_date) +1)
+    #plot(r_rainfall,y=1,ext=extent(dat_stat),main=paste0("Raster image for ",date_str))
+    title_str <- paste0("Rainfall for ",date_str)
+    plot(r_rainfall,y=diff_date,ext=extent(dat_stat),main=title_str)
+    #Update the plot as well here!!
     plot(dat_stat,add=T,pch=3)
     #text(dat_stat,dat_stat$LOCATION_ID,cex=1.4)
     legend("topright",legend=paste0(data_type," stations"), 
            cex=1.2, col="black",pch =3,bty="n")
   })
   
-  #dataInput <- reactive({
-  #  getSymbols(input$symb, src = "yahoo", 
-  #             from = input$dates[1],
-  #             to = input$dates[2],
-  #             auto.assign = FALSE)
-  #})
-
   # Generate a summary of the dataset
   #output$summary <- renderPrint({
   #  dataset <- datasetInput()
@@ -324,3 +310,12 @@ shinyServer(function(input, output,session) {
 #http://stackoverflow.com/questions/27194893/reset-animation-in-shiny-r-studio
 #http://shiny.rstudio.com/articles/action-buttons.html
 #http://www.r-bloggers.com/shiny-module-design-patterns-pass-module-inputs-to-other-modules/?utm_source=feedburner&utm_medium=email&utm_campaign=Feed%3A+RBloggers+%28R+bloggers%29
+#http://www.r-bloggers.com/animated-plots-with-r/
+#http://stackoverflow.com/questions/30492537/shiny-app-embedded-video-not-working-browser-dependent
+
+
+#sliderInput("date_range", 
+#            "Choose Date Range:", 
+#            min = as.Date("2016-02-01"), max = Sys.Date(), 
+#            value = c(as.Date("2016-02-25"), Sys.Date())
+#)
