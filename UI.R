@@ -73,14 +73,14 @@ shinyUI(fluidPage(
       #helpText("Note: while the data view will show only the specified",
       #         "number of observations, the summary will still be based",
       #         "on the full dataset."),
+      sliderInput("date_range", 
+                  "Choose Date Range:", 
+                  min = as.Date("2012-01-01"), max = as.Date("2012-12-31"), 
+                  #value = c(as.Date("2012-01-01"), as.Date("2012-12-31")),
+                  value = c(as.Date("2012-01-01")),
+                  ticks=T,animate = T,step=1)#,
       
-      submitButton("Update View")
-      
-      actionButton("goButton", "Go!"),
-      actionButton("reset", "Reset"),
-      sliderInput("myvar", label=h6("Variability of cost"),min=0, max=50, value=10)   
-      sliderInput("myvar", label=h6("Variability of cost"),min=0, max=50, value=10)   
-      
+      #submitButton("Update View")
     ),
     
     mainPanel(
