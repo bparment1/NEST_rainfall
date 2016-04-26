@@ -50,7 +50,7 @@ library(shiny)
 #runExample("07_widgets")
 #Run on shinyapps.io 
 #First navigate to the location of the app:
-#/home/bparmentier/Google Drive/NEST/NEST_stations_s05/
+#/home/bparmentier/Google Drive/NEST/NEST_stations_s06/
 #Note that all data and files referenced in the app should be location in the folder above
 #see shinyio
 #http://shiny.rstudio.com/articles/shinyapps.html
@@ -63,9 +63,8 @@ function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_functi
 script_path <- "." #path to script #PARAM 
 
 #script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
-#in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s02"
-#script_path <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s05/" #path to script #PARAM 
-#script_path <- "/home/benoit/data/NEST_stations_s05" #on SSI server
+#script_path <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s06/" #path to script #PARAM 
+#script_path <- "/home/benoit/data/NEST_stations_s06" #on SSI server
 #setwd(script_path)
 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
@@ -95,10 +94,9 @@ load_obj <- function(f){
 
 #####  Parameters and argument set up ###########
 
-#in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s05" #local bpy50 , param 1
-#in_dir <- "/home/bparmentier/Dropbox/Data/NEST/NEST_stations_s05"
+#in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s06" #local bpy50 , param 1
 #in_dir <- "./NEST_stations_s05" #NCEAS, param 
-#in_dir <- "/home/benoit/data/NEST_stations_s05" #NCEAS, param 
+#in_dir <- "/home/benoit/data/NEST_stations_s06" #U. Maine SSI server, param 
 in_dir <- "." #Use current directory, run locally
 
 
@@ -224,9 +222,9 @@ dat_stat_location_DMR <- readOGR("./data",sub(".shp","",dat_stat_location_DMR_fn
 #  r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
 #}
 
-if (convert_to_inches==TRUE){
-  r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
-}
+#if (convert_to_inches==TRUE){
+#  r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
+#}
 
 #data_df <- read.table(data_df_fname)
 #coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
