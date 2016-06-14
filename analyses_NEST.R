@@ -173,24 +173,50 @@ selected_ID <- list_ID[1]
   
 ## Should query the multiple !!!
 #tb$ID_stat
+read_select_station <- function(file_name,selected_val,selected_col){
+  tb <- read.table(file_name,sep=",")
+  df <- subset(tb,tb[[selected_col]]==selected_val)
+  #df <- subset(tb,tb$ID_stat==selected_ID)
+  return(df)
+}
 
-df <- subset(tb,tb$ID_stat==selected_ID)
+selected_val <- selected_ID
+selected_col <- "ID_stat"
+undebug(read_select_station)
+df <- read_select_station(station_measurements_DMR_data_fname[10],selected_val,selected_col)
+
+lf <- station_measurements_DMR_data_fname
+test <- lapply(lf[1:2],FUN=read_select_station,selected_val=selected_ID,selected_col=selected_col)
+
+test <- mclapply(lf,
+                 FUN=read_select_station,
+                 selected_val=selected_ID,
+                 selected_col=selected_col,
+                 mc.preschedule=FALSE,
+                 mc.cores = num_cores)
 
 var_name <- var_name_MHB
+var_name <- var_name_DMR
 y_var_name <- var_name
 x_var_name <- "rainfall"
 
 run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T){
   #
   #
-  test <- lm(log1p(df$COL_SCORE) ~ log1p(df$rainfall),df)
+  #test <- lm(log1p(df$COL_SCORE) ~ log1p(df$rainfall),df)
+  if(log_val==T){
+    mod <- lm(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),df)
+  }
+  if(log_val!=T){
+    mod <- lm(df[[y_var_name]] ~ df[[x_var_name]],df)
+  }
   
-  plot(log1p(df$COL_SCORE) ~ log1p(df$rainfall)) #only two data points for 2003!!!
-  summary_tb <- summary(test)
-  summary_tb$coefficients
-  plot(test)
+  plot(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]])) #only two data points for 2003!!!
+  summary_mod_tb <- (summary(mod))
+  tb_coefficients <- as.data.frame(summary_mod_tb$coefficients)
+  plot(mod)
   
-  return(test)
+  return(mod)
 }
 
 
