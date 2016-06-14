@@ -165,10 +165,39 @@ if(create_out_dir_param==TRUE){
 
 ###############
 
-tb <- read.table(station_measurements_DMR_data_fname[1],sep=",")
+tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
+
+list_ID <- unique(tb$ID_stat)
+
+selected_ID <- list_ID[1]
+  
+## Should query the multiple !!!
+#tb$ID_stat
+
+df <- subset(tb,tb$ID_stat==selected_ID)
+
+var_name <- var_name_MHB
+y_var_name <- var_name
+x_var_name <- "rainfall"
+
+run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T){
+  #
+  #
+  test <- lm(log1p(df$COL_SCORE) ~ log1p(df$rainfall),df)
+  
+  plot(log1p(df$COL_SCORE) ~ log1p(df$rainfall)) #only two data points for 2003!!!
+  summary_tb <- summary(test)
+  summary_tb$coefficients
+  plot(test)
+  
+  return(test)
+}
 
 
+###collec the number of observation by year+histogramin the function as well!!!
 
+#http://robjhyndman.com/hyndsight/transformations/
+  
 #list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
 #remove non relevant directories
 #list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
