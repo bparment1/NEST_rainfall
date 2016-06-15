@@ -42,7 +42,7 @@ library(lubridate)              # date and time handling tools
 library(parallel)               # access to parallelization functions
 library(hydrostats)
 library(shiny)
-
+library(plyr)                                # Various tools including rbind.fill
 
 ###### Functions used in this script sourced from other files
 
@@ -90,6 +90,7 @@ rainfall_dir <- "./data" #PARAM 10
 reg_ref_rast_name <- "./data/PRISM_ppt_stable_4kmD2_20111222_crop_proj_reg.tif"
 #station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
 #station_data_fname <- file.path("data", "MHB_data_2006-2015.csv") #PARAM 11
+
 
 #station_measurements_MHB_data_fname <- file.path("data", "data_df_rainfall_and_measurements_MHB.txt") #PARAM 11 
 #This will change
@@ -149,46 +150,105 @@ if(create_out_dir_param==TRUE){
 
 ###############
 
-tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
+#data_df <- data_df_MHB #default dataset!!
+#data_df_DMR
+dat_stat_location_MHB <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_stat_location_MHB_fname))
+dat_stat_location_DMR <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_stat_location_DMR_fname))
 
-list_ID <- unique(tb$ID_stat)
+list_ID <- unique(dat_stat_location_DMR$ID_stat)
+
+#tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
 
 selected_ID <- list_ID[1]
-  
+selected_ID <- list_ID[5]  
 ## Should query the multiple !!!
 #tb$ID_stat
 
 selected_val <- selected_ID
 selected_col <- "ID_stat"
 #undebug(read_select_station)
-df <- read_select_station(station_measurements_DMR_data_fname[10],selected_val,selected_col)
+#df <- read_select_station(station_measurements_DMR_data_fname[10],selected_val,selected_col)
 
 lf <- station_measurements_DMR_data_fname
-test <- lapply(lf[1:2],FUN=read_select_station,selected_val=selected_ID,selected_col=selected_col)
+#test <- lapply(lf[1:2],FUN=read_select_station,selected_val=selected_ID,selected_col=selected_col)
 
-test <- mclapply(lf,
+l_df <- mclapply(lf,
                  FUN=read_select_station,
                  selected_val=selected_ID,
                  selected_col=selected_col,
                  mc.preschedule=FALSE,
                  mc.cores = num_cores)
 
-var_name <- var_name_MHB
+#var_name <- var_name_MHB
 var_name <- var_name_DMR
 y_var_name <- var_name
 x_var_name <- "rainfall"
 
-test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
+#test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
+df_combined <- do.call(rbind,l_df) 
+
+if(nrow(df_combined)>0){
+  run_mod_obj <- run_simple_lm(df_combined,
+                               y_var_name=y_var_name,
+                               x_var_name=x_var_name,
+                               plot_fig=T,
+                               log_val=T)
   
-test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
-test_coef <- mclapply(test,
+  
+  #run_mod_obj$tb_coefficients
+  #run_mod_obj$p
+}
+
+
+
+
+#### Now run through the whole dataset:
+
+remove_from_list_fun <- function(l_x,condition_class ="try-error"){
+  index <- vector("list",length(l_x))
+  for (i in 1:length(l_x)){
+    if (inherits(l_x[[i]],condition_class)){
+      index[[i]] <- FALSE #remove from list
+    }else{
+      index[[i]] <- TRUE
+    }
+  }
+  l_x<-l_x[unlist(index)] #remove from list all elements using subset
+  
+  obj <- list(l_x,index)
+  names(obj) <- c("list","valid")
+  return(obj)
+}
+
+#test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
+l_tb_coef <- mclapply(l_df,
                  FUN=run_simple_lm,
                  y_var_name=y_var_name,
                  x_var_name=x_var_name,
                  log_val=T,
                  mc.preschedule=FALSE,
                  mc.cores = num_cores)
+l_dates <- 2003:2016
+names(l_tb_coef) <- l_dates
+l_tb_coef_NA <- remove_from_list_fun(l_tb_coef)$list
 
+tb_coef_combined <- do.call(rbind.fill,l_tb_coef_NA) #create a df for NA tiles with all accuracy metrics
+
+#add the dates to table
+dates_tmp <- lapply(1:length(l_tb_coef_NA),
+                      FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},
+                      x=l_tb_coef_NA,y=names(l_tb_coef_NA))
+#adding tile id summary data.frame
+tb_coef_combined$year <- dates_tmp
+
+#summary_metrics_v_NA <- do.call(rbind.fill,summary_metrics_v_tmp) #create a df for NA tiles with all accuracy metrics
+#tile_coord <- lapply(1:length(summary_metrics_v_list),FUN=function(i,x){rep(names(x)[i],nrow(x[[i]]))},x=summary_metrics_v_list)
+#add the tile id identifier
+#tile_id_tmp <- lapply(1:length(summary_metrics_v_tmp),
+#                      FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},x=summary_metrics_v_tmp,y=names(summary_metrics_v_tmp))
+#adding tile id summary data.frame
+#summary_metrics_v_NA$tile_id <-unlist(tile_id_tmp)
+#summary_metrics_v_NA$n <- as.integer(summary_metrics_v_NA$n)
 
 ###collec the number of observation by year+histogramin the function as well!!!
 
@@ -229,10 +289,6 @@ data_df <- read.table("./data/data_df_rainfall_and_measurements_MHB.txt",sep=","
 list_location_ID <- unique(data_df$LOCATION_ID)
 
 #
-#data_df <- data_df_MHB #default dataset!!
-#data_df_DMR
-dat_stat_location_MHB <- readOGR("./data",sub(".shp","",dat_stat_location_MHB_fname))
-dat_stat_location_DMR <- readOGR("./data",sub(".shp","",dat_stat_location_DMR_fname))
 
 ### Part 2: read in raster rainfall data and SMA zones
 
