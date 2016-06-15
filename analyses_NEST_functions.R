@@ -1,3 +1,4 @@
+
 ##############################################  NEST Beach closure project  #######################################
 #################################  Analyses for exploration of station measurements  #######################################
 #This contains functions used to explore the correlation between rainfall events and beach closures due to bacteria outbreaks in Maine.
@@ -84,7 +85,7 @@ read_select_station <- function(file_name,selected_val,selected_col){
    return(df)
 }
 
-run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T){
+run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
   #
   #
   #test <- lm(log1p(df$COL_SCORE) ~ log1p(df$rainfall),df)
@@ -95,13 +96,16 @@ run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T){
     mod <- lm(df[[y_var_name]] ~ df[[x_var_name]],df)
   }
 
-  #plot(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]])) #only two data points for 2003!!!
+  p <- xyplot(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),
+              xlab=list(label=x_var_name, cex=1.2),
+              ylab=list(label=y_var_name, cex=1.2)) #only two data points for 2003!!!
   summary_mod_tb <- (summary(mod))
   tb_coefficients <- as.data.frame(summary_mod_tb$coefficients)
   #plot(mod)
   #change name of rows and add n columns for the number of inputs in the model!
-
-  return(tb_coefficients)
+  run_lm_obj <- list(tb_coefficients,mod,p)
+  names(run_lm_obj) <- c("tb_coefficients","mod","plot")  
+  return(run_lm_obj)
 }
 
 ########################### End of script #####################################
