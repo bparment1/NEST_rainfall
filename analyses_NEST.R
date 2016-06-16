@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/14/2016 
-#DATE MODIFIED: 06/15/2016
+#DATE MODIFIED: 06/16/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -47,7 +47,7 @@ library(plyr)                                # Various tools including rbind.fil
 ###### Functions used in this script sourced from other files
 
 function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
-function_analyses_NEST <- "analyses_NEST_functions_06152016.R" #PARAM 1
+function_analyses_NEST <- "analyses_NEST_functions_06162016.R" #PARAM 1
 
 script_path <- "." #path to script #PARAM 
 
@@ -157,7 +157,8 @@ dat_stat_location_DMR <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_sta
 
 list_ID <- unique(dat_stat_location_DMR$ID_stat)
 
-#tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
+tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
+list_ID <- unique(tb$ID_stat)
 
 selected_ID <- list_ID[1]
 selected_ID <- list_ID[5]  
@@ -170,34 +171,14 @@ selected_col <- "ID_stat"
 #df <- read_select_station(station_measurements_DMR_data_fname[10],selected_val,selected_col)
 
 lf <- station_measurements_DMR_data_fname
-#test <- lapply(lf[1:2],FUN=read_select_station,selected_val=selected_ID,selected_col=selected_col)
-
-l_df <- mclapply(lf,
-                 FUN=read_select_station,
-                 selected_val=selected_ID,
-                 selected_col=selected_col,
-                 mc.preschedule=FALSE,
-                 mc.cores = num_cores)
-
 #var_name <- var_name_MHB
 var_name <- var_name_DMR
 y_var_name <- var_name
 x_var_name <- "rainfall"
-
-#test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
-df_combined <- do.call(rbind,l_df) 
-
-if(nrow(df_combined)>0){
-  run_mod_obj <- run_simple_lm(df_combined,
-                               y_var_name=y_var_name,
-                               x_var_name=x_var_name,
-                               plot_fig=T,
-                               log_val=T)
+selected_ID <- 1
+test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix)
   
-  
-  #run_mod_obj$tb_coefficients
-  #run_mod_obj$p
-}
+
 
 
 
