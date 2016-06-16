@@ -108,4 +108,35 @@ run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
   return(run_lm_obj)
 }
 
+run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix){
+  ##Function to run lm model by station with or without log transform
+  
+  l_df <- mclapply(lf,
+                   FUN=read_select_station,
+                   selected_val=selected_ID,
+                   selected_col=selected_col,
+                   mc.preschedule=FALSE,
+                   mc.cores = num_cores)
+  
+  #test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
+  df_combined <- do.call(rbind,l_df) 
+  write.table(df_combined,paste("df_combined_",selected_ID,out_suffix,sep=""),sep=",")
+  
+  if(nrow(df_combined)>0){
+    run_mod_obj <- run_simple_lm(df_combined,
+                                 y_var_name=y_var_name,
+                                 x_var_name=x_var_name,
+                                 plot_fig=T,
+                                 log_val=T)
+    
+    
+    #run_mod_obj$tb_coefficients
+    #run_mod_obj$p
+  }else{
+    run_mod_obj <- NULL
+  }
+  
+  return(run_mod_obj)
+}
+
 ########################### End of script #####################################
