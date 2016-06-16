@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/15/2016 
-#DATE MODIFIED: 06/15/2016
+#DATE MODIFIED: 06/16/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -108,7 +108,7 @@ run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
   return(run_lm_obj)
 }
 
-run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix){
+run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix,num_cores){
   ##Function to run lm model by station with or without log transform
   
   l_df <- mclapply(lf,
@@ -137,6 +137,22 @@ run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,
   }
   
   return(run_mod_obj)
+}
+
+remove_from_list_fun <- function(l_x,condition_class ="try-error"){
+  index <- vector("list",length(l_x))
+  for (i in 1:length(l_x)){
+    if (inherits(l_x[[i]],condition_class)){
+      index[[i]] <- FALSE #remove from list
+    }else{
+      index[[i]] <- TRUE
+    }
+  }
+  l_x<-l_x[unlist(index)] #remove from list all elements using subset
+  
+  obj <- list(l_x,index)
+  names(obj) <- c("list","valid")
+  return(obj)
 }
 
 ########################### End of script #####################################
