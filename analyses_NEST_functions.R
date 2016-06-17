@@ -101,6 +101,8 @@ run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
               ylab=list(label=y_var_name, cex=1.2)) #only two data points for 2003!!!
   summary_mod_tb <- (summary(mod))
   tb_coefficients <- as.data.frame(summary_mod_tb$coefficients)
+  
+  ## NUmber of inputs??
   #plot(mod)
   #change name of rows and add n columns for the number of inputs in the model!
   run_lm_obj <- list(tb_coefficients,mod,p)
