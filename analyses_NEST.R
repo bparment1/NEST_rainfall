@@ -47,9 +47,9 @@ library(plyr)                                # Various tools including rbind.fil
 ###### Functions used in this script sourced from other files
 
 function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
-function_analyses_NEST <- "analyses_NEST_functions_06162016.R" #PARAM 1
+function_analyses_NEST <- "analyses_NEST_functions_06162016b.R" #PARAM 1
 
-script_path <- "." #path to script #PARAM 
+#script_path <- "." #path to script #PARAM 
 
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s06/" #path to script #PARAM 
@@ -161,7 +161,7 @@ tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
 list_ID <- unique(tb$ID_stat)
 
 selected_ID <- list_ID[1]
-selected_ID <- list_ID[5]  
+#selected_ID <- list_ID[5]  
 ## Should query the multiple !!!
 #tb$ID_stat
 
@@ -175,31 +175,27 @@ lf <- station_measurements_DMR_data_fname
 var_name <- var_name_DMR
 y_var_name <- var_name
 x_var_name <- "rainfall"
-selected_ID <- 1
-test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix)
+#selected_ID <- 1
+test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix,num_cores)
   
+run_lm_obj <- lapply(list_ID[1:10],
+                     FUN=run_lm_by_station,
+                     selected_col=selected_col,
+                     x_var_name=x_var_name,
+                     y_var_name=y_var_name,
+                     lf=lf,
+                     log_val=T,
+                     out_dir=out_dir,
+                     out_suffix=out_suffix,
+                     num_cores=num_cores)
 
 
 
 
+#### Now run by year and station as a test???
 
-#### Now run through the whole dataset:
 
-remove_from_list_fun <- function(l_x,condition_class ="try-error"){
-  index <- vector("list",length(l_x))
-  for (i in 1:length(l_x)){
-    if (inherits(l_x[[i]],condition_class)){
-      index[[i]] <- FALSE #remove from list
-    }else{
-      index[[i]] <- TRUE
-    }
-  }
-  l_x<-l_x[unlist(index)] #remove from list all elements using subset
-  
-  obj <- list(l_x,index)
-  names(obj) <- c("list","valid")
-  return(obj)
-}
+##run by year
 
 #test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
 l_tb_coef <- mclapply(l_df,
@@ -222,92 +218,5 @@ dates_tmp <- lapply(1:length(l_tb_coef_NA),
 #adding tile id summary data.frame
 tb_coef_combined$year <- dates_tmp
 
-#summary_metrics_v_NA <- do.call(rbind.fill,summary_metrics_v_tmp) #create a df for NA tiles with all accuracy metrics
-#tile_coord <- lapply(1:length(summary_metrics_v_list),FUN=function(i,x){rep(names(x)[i],nrow(x[[i]]))},x=summary_metrics_v_list)
-#add the tile id identifier
-#tile_id_tmp <- lapply(1:length(summary_metrics_v_tmp),
-#                      FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},x=summary_metrics_v_tmp,y=names(summary_metrics_v_tmp))
-#adding tile id summary data.frame
-#summary_metrics_v_NA$tile_id <-unlist(tile_id_tmp)
-#summary_metrics_v_NA$n <- as.integer(summary_metrics_v_NA$n)
-
-###collec the number of observation by year+histogramin the function as well!!!
-
-#http://robjhyndman.com/hyndsight/transformations/
-  
-#list_dir_rainfall <- list.dirs(path=rainfall_dir,full.names=T)
-#remove non relevant directories
-#list_dir_rainfall <- grep("prism_ppt*", list_dir_rainfall,value=T)
-#get years processed: these are the default values
-#year_processed_start <- year(start_date) #make this work for end dates too!!
-#year_processed_end <- year(end_date) #make this work for end dates too!!
-
-#For faster reading of the data...multicore and reduce data in memory by on the fly loading of data
-#list_year_processed <- year_processed_start:year_processed_end
-#year_processed <- year(start_date) #make this work for end dates too!!
-#in_dir_rst <- grep(paste0("prism_ppt_",year_processed), list_dir_rainfall,value=T)
-#This maybe fast in a brick??
-#maybe use 
-#r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
-
-#r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
-
-#ref_rast <- raster(reg_ref_rast_name) 
-#reg_poly <- create_polygon_from_extent(ref_rast) #use this to clean up station coordinates??
-  
-#### Part 1: read in combined information by stations ####
-
-#list_df_fname <- list.files(path=out_dir,pattern="data_df_.*._NEST_prism_03272016.txt",full.names=T)
-#list_df <- lapply(list_df_fname,function(x){read.table(x,stringsAsFactors=F,sep=",")})
-#tb <- do.call(rbind,list_df)
-
-#write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_",data_type,".txt")),sep=",")
-
-##Should we read table in?
-#data_df_MHB <- read.table(station_measurements_MHB_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
-#data_df_DMR <- read.table(station_measurements_DMR_data_fname,sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
-data_df <- read.table("./data/data_df_rainfall_and_measurements_MHB.txt",sep=",",header=T,fill=T,stringsAsFactors = F) #bacteria measurements
-list_location_ID <- unique(data_df$LOCATION_ID)
-
-#
-
-### Part 2: read in raster rainfall data and SMA zones
-
-#SMAZones <- readOGR("./data",sub(".shp","",SMAZones_fname))
-
-#for(i in 1:length(list_dir_rainfall)){
-#  in_dir_rst <- list_dir_rainfall[11]
-#  r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
-#}
-
-#if (convert_to_inches==TRUE){
-#  r_rainfall <- r_rainfall/25.4 #improve efficiency later? YES!!
-#}
-
-#data_df <- read.table(data_df_fname)
-#coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.")
-#idx <- seq(as.Date(start_date), as.Date(end_date), 'day')
-#date_l <- strptime(idx[1], "%Y%m%d") # 
-#dates_l <- format(idx, "%Y%m%d") #  date being processed
-
-proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
-
-#test <- over( SMAZones , ind_adm , fn = NULL) 
-#test <- over( data_df  , SMAZones , fn = NULL) 
-
 ########################### End of script #####################################
 
-#http://shiny.rstudio.com/tutorial/lesson7/
-#http://shiny.rstudio.com/articles/shinyapps.html
-
-#data_df_combined_.*._DMR.txt
-
-#list_df_fname <- list.files(path=out_dir,pattern="data_df_.*._NEST_prism_03272016.txt",full.names=T)
-#list_df_fname <- list.files(path=out_dir,pattern="data_df_combined_.*._DMR.txt",full.names=T)
-#list_df_fname <- station_measurements_DMR_data_fname
-#list_df <- lapply(list_df_fname,function(x){read.table(x,stringsAsFactors=F,sep=",")})
-
-#tb <- do.call(rbind,list_df)
-#write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_","DMR",".txt")),sep=",")
-
-#write.table(tb,file=file.path(out_dir,paste0("data_df_rainfall_and_measurements_",data_type,".txt")),sep=",")
