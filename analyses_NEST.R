@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/14/2016 
-#DATE MODIFIED: 06/20/2016
+#DATE MODIFIED: 06/21/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -47,7 +47,7 @@ library(plyr)                                # Various tools including rbind.fil
 ###### Functions used in this script sourced from other files
 
 function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
-function_analyses_NEST <- "analyses_NEST_functions_06202016.R" #PARAM 1
+function_analyses_NEST <- "analyses_NEST_functions_06212016.R" #PARAM 1
 
 #script_path <- "." #path to script #PARAM 
 
