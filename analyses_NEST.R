@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/14/2016 
-#DATE MODIFIED: 06/16/2016
+#DATE MODIFIED: 06/20/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -47,7 +47,7 @@ library(plyr)                                # Various tools including rbind.fil
 ###### Functions used in this script sourced from other files
 
 function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
-function_analyses_NEST <- "analyses_NEST_functions_06162016c.R" #PARAM 1
+function_analyses_NEST <- "analyses_NEST_functions_06202016.R" #PARAM 1
 
 #script_path <- "." #path to script #PARAM 
 
@@ -176,9 +176,11 @@ var_name <- var_name_DMR
 y_var_name <- var_name
 x_var_name <- "rainfall"
 #selected_ID <- 1
-#test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix,num_cores)
+#
+debug(run_lm_by_station)
+test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix,num_cores)
   
-run_lm_obj <- lapply(list_ID[1:5],
+run_lm_obj <- lapply(list_ID[1:1],
                      FUN=run_lm_by_station,
                      selected_col=selected_col,
                      x_var_name=x_var_name,
@@ -190,8 +192,8 @@ run_lm_obj <- lapply(list_ID[1:5],
                      num_cores=num_cores)
 
 
-run_lm_obj[[5]]$plot
-run_lm_obj[[5]]$tb_coefficients
+run_lm_obj[[1]]$plot
+run_lm_obj[[1]]$tb_coefficients
 
 tb_coef_combined <- do.call(rbind.fill,l_tb_coef_NA) #create a df for NA tiles with all accuracy metrics
 
