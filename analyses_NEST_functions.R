@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/15/2016 
-#DATE MODIFIED: 06/16/2016
+#DATE MODIFIED: 06/20/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -89,24 +89,62 @@ run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
   #
   #
   #test <- lm(log1p(df$COL_SCORE) ~ log1p(df$rainfall),df)
-  if(log_val==T){
-    mod <- lm(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),df)
+  
+  if(log_val==T){ #change the log transform later!!
+    df_tmp <- data.frame(df[[y_var_name]],df[[x_var_name]])
+    df_tmp <- na.omit(df_tmp)
+    names(df_tmp)<- c(paste("log1p",y_var_name,sep="_"),paste("log1p",x_var_name,sep="_"))
+    y_var <- names(df_tmp[1])
+    x_var <- names(df_tmp[2])
+
+    formula_str <- formula(paste(y_var,"~",x_var,sep=" "))
+    #formula_str <- as.character(paste(y_var,"~",x_var,sep=" "))
+    
+    #mod <- lm(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),df_tmp)
+    mod <- lm(eval(formula_str),df_tmp)
+    #formula(lm(formula_str))
   }
   if(log_val!=T){
-    mod <- lm(df[[y_var_name]] ~ df[[x_var_name]],df)
+    df_tmp <- data.frame(df[[y_var_name]],df[[x_var_name]])
+    df_tmp <- na.omit(df_tmp)
+    names(df_tmp) <- c(y_var_name,x_var_name)
+
+    y_var <- names(df_tmp[1])
+    x_var <- names(df_tmp[2])
+    formula_str <- formula(paste(y_var,"~",x_var,sep=" "))
+    
+    mod <- lm(eval(formula_str),df_tmp)
   }
 
+  ## NUmber of inputs??
+  no_obs <- nobs(mod)
+  #nrow(mod) #same as nobs output
+  
+  # Create the lm object ahead of time
+  lm1 <- lm(Neff ~ Eeff, data = phuong)
+  
+  # Create the character string that you want to print
+  tp <- sprintf("%s=%.1f + %.2f %s", all.vars(formula(lm1))[1],
+                coef(lm1)[1], coef(lm1)[2], all.vars(formula(lm1))[2])
+  
+  # Change the mypanel function to use the lm1 object
+  mypanel<-function(x,y,...){
+    panel.xyplot(x, y, ...)
+    panel.abline(lm1)
+    panel.text(30,33,labels=tp)
+  }
+  
   p <- xyplot(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),
               xlab=list(label=x_var_name, cex=1.2),
               ylab=list(label=y_var_name, cex=1.2)) #only two data points for 2003!!!
   summary_mod_tb <- (summary(mod))
   tb_coefficients <- as.data.frame(summary_mod_tb$coefficients)
   
-  ## NUmber of inputs??
+
   #plot(mod)
   #change name of rows and add n columns for the number of inputs in the model!
-  run_lm_obj <- list(tb_coefficients,mod,p)
-  names(run_lm_obj) <- c("tb_coefficients","mod","plot")  
+  run_lm_obj <- list(tb_coefficients,mod,p,"n_obs")
+  names(run_lm_obj) <- c("tb_coefficients","mod","plot","nobs")  
   return(run_lm_obj)
 }
 
@@ -125,6 +163,7 @@ run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,
   write.table(df_combined,paste("df_combined_",selected_ID,out_suffix,sep=""),sep=",")
   
   if(nrow(df_combined)>0){
+    #debug(run_simple_lm)
     run_mod_obj <- run_simple_lm(df_combined,
                                  y_var_name=y_var_name,
                                  x_var_name=x_var_name,
@@ -155,6 +194,17 @@ remove_from_list_fun <- function(l_x,condition_class ="try-error"){
   obj <- list(l_x,index)
   names(obj) <- c("list","valid")
   return(obj)
+}
+
+###Modifying function lm to print formula if it is given as string or formula
+#this is taken from:
+lm <- function(...) {
+  mf <- match.call()
+  mf[[1]] <- quote(stats::lm)
+  env <- parent.frame()
+  fm <- eval(mf, env)
+  fm$call$formula <- formula(fm)
+  fm
 }
 
 ########################### End of script #####################################
