@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/15/2016 
-#DATE MODIFIED: 06/20/2016
+#DATE MODIFIED: 06/21/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -88,6 +88,8 @@ read_select_station <- function(file_name,selected_val,selected_col){
 run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
   #
   #
+  #http://stackoverflow.com/questions/9923722/how-to-make-lm-display-in-its-output-a-formula-passed-to-it-as-a-variable
+  
   #test <- lm(log1p(df$COL_SCORE) ~ log1p(df$rainfall),df)
   
   if(log_val==T){ #change the log transform later!!
@@ -108,12 +110,12 @@ run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
     df_tmp <- data.frame(df[[y_var_name]],df[[x_var_name]])
     df_tmp <- na.omit(df_tmp)
     names(df_tmp) <- c(y_var_name,x_var_name)
-
     y_var <- names(df_tmp[1])
     x_var <- names(df_tmp[2])
     formula_str <- formula(paste(y_var,"~",x_var,sep=" "))
     
     mod <- lm(eval(formula_str),df_tmp)
+    #mod <- lm(df[[y_var_name]] ~ df[[x_var_name]],df_tmp)
   }
 
   ## NUmber of inputs??
@@ -121,26 +123,61 @@ run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
   #nrow(mod) #same as nobs output
   
   # Create the lm object ahead of time
-  lm1 <- lm(Neff ~ Eeff, data = phuong)
+  #lm1 <- lm(Neff ~ Eeff, data = phuong)
   
   # Create the character string that you want to print
-  tp <- sprintf("%s=%.1f + %.2f %s", all.vars(formula(lm1))[1],
-                coef(lm1)[1], coef(lm1)[2], all.vars(formula(lm1))[2])
+  tp <- sprintf("%s=%.1f + %.2f %s", all.vars(formula(mod))[1],
+                coef(mod)[1], coef(mod)[2], all.vars(formula(mod))[2])
   
   # Change the mypanel function to use the lm1 object
   mypanel<-function(x,y,...){
     panel.xyplot(x, y, ...)
-    panel.abline(lm1)
-    panel.text(30,33,labels=tp)
+    panel.abline(mod)
+    panel.text("topleft",labels=tp)
   }
-  
-  p <- xyplot(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),
-              xlab=list(label=x_var_name, cex=1.2),
-              ylab=list(label=y_var_name, cex=1.2)) #only two data points for 2003!!!
+  #library(grid)
+  #mypanel <- function(...) {
+  #  panel.superpose(col=c("red","blue"),lwd=1.5,...)
+  #  grid.text(x=.5,y=.8,label=mytext[panel.number()]) 
+  #}
+  #library(grid)
+  #mypanel <- function(...) {
+  #  panel.superpose(col=c("black"),lwd=1.5,...)
+  #   grid.text(x=.5,y=.8,label=tp) 
+  #}
+  #xyplot(Neff~Eeff,data=phuong,panel=mypanel,
+  #       col="black",
+  #       pch=18,xlab="Energy efficiency (%)",
+  #       ylab = "Nitrogen efficiency (%)", main="(a)")
+  #only two data points for 2003!!!
   summary_mod_tb <- (summary(mod))
   tb_coefficients <- as.data.frame(summary_mod_tb$coefficients)
+  names(tb_coefficients) <- c("estimate","std_error","t_value","p")
+  #rownames(tb_coefficients)
+  if(nrow(tb_coefficients)>1){
+    coef_type_val <- c("intercept","slope")
+    p_intercept <- tb_coefficients$estimate[1]
+    p_slope <- tb_coefficients$estimate[2]
+    p_vals <- c(p_intercept,p_slope)
+  }else{
+    coef_type_val <- c("intercept")
+    p_intercept <- tb_coefficients$estimate[1]
+    p_vals <- p_intercept
+  }
   
-
+  tb_coefficients$coef_type <- coef_type_val
+  #p_vals <- paste(format(tb_coefficients$p, digits=3),collpapse="")
+  p <- xyplot(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),
+              panel=mypanel,
+              xlab=list(label=x_var_name, cex=1.2),
+              ylab=list(label=y_var_name, cex=1.2),
+              auto.key=list(x=0.05,y=0.95,text=c(tp,p_vals),
+                            points=FALSE, lines=FALSE,col=c(1,1))
+              #auto.key=list(x=0.05,y=0.95,text=c("mean","5th and 95th percentiles"),
+              #              points=FALSE, lines=TRUE,col=c(1,2))
+              )
+  #format(x, digits=4, nsmall=2)
+  #format(tb_coefficients$p, digits=3)
   #plot(mod)
   #change name of rows and add n columns for the number of inputs in the model!
   run_lm_obj <- list(tb_coefficients,mod,p,"n_obs")
