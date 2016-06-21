@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/14/2016 
-#DATE MODIFIED: 06/21/2016
+#DATE MODIFIED: 06/22/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -47,7 +47,7 @@ library(plyr)                                # Various tools including rbind.fil
 ###### Functions used in this script sourced from other files
 
 function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
-function_analyses_NEST <- "analyses_NEST_functions_06212016.R" #PARAM 1
+function_analyses_NEST <- "analyses_NEST_functions_06222016.R" #PARAM 1
 
 #script_path <- "." #path to script #PARAM 
 
@@ -155,6 +155,7 @@ if(create_out_dir_param==TRUE){
 dat_stat_location_MHB <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_stat_location_MHB_fname))
 dat_stat_location_DMR <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_stat_location_DMR_fname))
 
+data_type <- "DMR"
 list_ID <- unique(dat_stat_location_DMR$ID_stat)
 
 tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
@@ -177,10 +178,10 @@ y_var_name <- var_name
 x_var_name <- "rainfall"
 #selected_ID <- 1
 #
-debug(run_lm_by_station)
-test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix,num_cores)
+#undebug(run_lm_by_station)
+#test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix,num_cores)
   
-run_lm_obj <- lapply(list_ID[1:1],
+run_lm_obj <- lapply(list_ID[1:5],
                      FUN=run_lm_by_station,
                      selected_col=selected_col,
                      x_var_name=x_var_name,
@@ -191,37 +192,61 @@ run_lm_obj <- lapply(list_ID[1:1],
                      out_suffix=out_suffix,
                      num_cores=num_cores)
 
+#run_lm_obj <- lapply(list_ID,
+#                     FUN=run_lm_by_station,
+#                     selected_col=selected_col,
+#                     x_var_name=x_var_name,
+#                     y_var_name=y_var_name,
+#                    lf=lf,
+#                     log_val=T,
+#                    out_dir=out_dir,
+#                     out_suffix=out_suffix,
+#                     num_cores=num_cores)
+
+### TO DO CHANGE THE TRANSFORMATION TO LOG10 OR SOME OTHER!!!
 
 run_lm_obj[[1]]$plot
 run_lm_obj[[1]]$tb_coefficients
 
+l_tb_coef <- lapply(run_lm_obj,FUN=function(x){x[["tb_coefficients"]]})
+names(l_tb_coef) <- list_ID[1:5]
+l_tb_coef_NA <- remove_from_list_fun(l_tb_coef)$list
 tb_coef_combined <- do.call(rbind.fill,l_tb_coef_NA) #create a df for NA tiles with all accuracy metrics
+
+#add the station ID to table by extracting name and replicating rows
+list_ID_col_tmp <- unlist(lapply(1:length(l_tb_coef_NA),
+                    FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},
+                    x=l_tb_coef_NA,y=names(l_tb_coef_NA)))
+#adding tile id summary data.frame
+tb_coef_combined$ID_stat <- list_ID_col_tmp
+tb_coef_combined$data_type <- data_type
+
+########################### End of script #####################################
 
 #### Now run by year and station as a test???
 
 
-##run by year
+# ##run by year
+# 
+# #test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
+# l_tb_coef <- mclapply(l_df,
+#                       FUN=run_simple_lm,
+#                       y_var_name=y_var_name,
+#                       x_var_name=x_var_name,
+#                       log_val=T,
+#                       mc.preschedule=FALSE,
+#                       mc.cores = num_cores)
+# l_dates <- 2003:2016
+# names(l_tb_coef) <- l_dates
+# l_tb_coef_NA <- remove_from_list_fun(l_tb_coef)$list
+# 
+# tb_coef_combined <- do.call(rbind.fill,l_tb_coef_NA) #create a df for NA tiles with all accuracy metrics
+# 
+# #add the dates to table
+# dates_tmp <- lapply(1:length(l_tb_coef_NA),
+#                     FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},
+#                     x=l_tb_coef_NA,y=names(l_tb_coef_NA))
+# #adding tile id summary data.frame
+# tb_coef_combined$year <- dates_tmp
 
-#test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
-l_tb_coef <- mclapply(l_df,
-                 FUN=run_simple_lm,
-                 y_var_name=y_var_name,
-                 x_var_name=x_var_name,
-                 log_val=T,
-                 mc.preschedule=FALSE,
-                 mc.cores = num_cores)
-l_dates <- 2003:2016
-names(l_tb_coef) <- l_dates
-l_tb_coef_NA <- remove_from_list_fun(l_tb_coef)$list
-
-tb_coef_combined <- do.call(rbind.fill,l_tb_coef_NA) #create a df for NA tiles with all accuracy metrics
-
-#add the dates to table
-dates_tmp <- lapply(1:length(l_tb_coef_NA),
-                      FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},
-                      x=l_tb_coef_NA,y=names(l_tb_coef_NA))
-#adding tile id summary data.frame
-tb_coef_combined$year <- dates_tmp
-
-########################### End of script #####################################
 
