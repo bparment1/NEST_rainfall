@@ -22,7 +22,7 @@
 library(raster)                 # loading the raster package
 library(gtools)                 # loading R helper programming tools/functions
 library(sp)                     # spatial objects in R
-library(gplots)                 # plotting functions such as plotCI
+#library(gplots)                 # plotting functions such as plotCI
 library(rgdal)                  # gdal driver for R
 library(RColorBrewer)           # color scheme, palettes used for plotting
 library(gdata)                  # read different format (including .xlsx)
@@ -40,24 +40,24 @@ library(sphet)                  # spatial analyis, regression eg.contains spreg 
 library(forecast)               # arima and other time series methods
 library(lubridate)              # date and time handling tools
 library(parallel)               # access to parallelization functions
-library(hydrostats)
+#library(hydrostats)
 library(shiny)
 library(plyr)                                # Various tools including rbind.fill
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
+#function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
 function_analyses_NEST <- "analyses_NEST_functions_06222016.R" #PARAM 1
 
 #script_path <- "." #path to script #PARAM 
-
-script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
+script_path <- "/home/parmentier/Data/NEST/R_NEST"
+#script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s06/" #path to script #PARAM 
 #script_path <- "/home/benoit/data/NEST_stations_s06" #on SSI server
 #setwd(script_path)
 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
-source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
+#source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
 source(file.path(script_path,function_analyses_NEST)) #source all functions used in this script 1.
 
 ##### Functions used in this script 
@@ -68,8 +68,9 @@ source(file.path(script_path,function_analyses_NEST)) #source all functions used
 #in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s06" #local bpy50 , param 1
 #in_dir <- "./NEST_stations_s05" #NCEAS, param 
 #in_dir <- "/home/benoit/data/NEST_stations_s06" #U. Maine SSI server, param 
-in_dir <- "." #Use current directory, run locally
-in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s08"
+#in_dir <- "." #Use current directory, run locally
+in_dir <- "/home/parmentier/Data/NEST/NEST_stations_s08"
+#in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s08"
 
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
 proj_str<- CRS_WGS84 #param 2
@@ -83,7 +84,7 @@ NA_flag_val <- NA_value #PARAM6
 out_suffix <- paste0("NEST_analyses_",format(Sys.Date(),"%Y%m%d"))
 
 create_out_dir_param=T #PARAM8
-num_cores <- 4 #PARAM 9
+num_cores <- 11 #PARAM 9
 
 #rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
 rainfall_dir <- "./data" #PARAM 10
@@ -195,7 +196,7 @@ run_lm_obj <- lapply(list_ID[1:5],
                      num_cores=num_cores)
 
 #save(downloaded_obj,file= file.path(in_dir,paste("downloaded_prism_data_",var_name,".RData",sep="")))
-#started on 22:15
+#started on 8:09
 run_lm_obj <- lapply(list_ID,
                      FUN=run_lm_by_station,
                      selected_col=selected_col,
@@ -215,7 +216,7 @@ run_lm_obj[[1]]$plot
 run_lm_obj[[1]]$tb_coefficients
 
 l_tb_coef <- lapply(run_lm_obj,FUN=function(x){x[["tb_coefficients"]]})
-names(l_tb_coef) <- list_ID[1:5]
+names(l_tb_coef) <- list_ID
 l_tb_coef_NA <- remove_from_list_fun(l_tb_coef)$list
 tb_coef_combined <- do.call(rbind.fill,l_tb_coef_NA) #create a df for NA tiles with all accuracy metrics
 
