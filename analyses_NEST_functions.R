@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/15/2016 
-#DATE MODIFIED: 06/21/2016
+#DATE MODIFIED: 06/22/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -23,7 +23,7 @@
 library(raster)                 # loading the raster package
 library(gtools)                 # loading R helper programming tools/functions
 library(sp)                     # spatial objects in R
-library(gplots)                 # plotting functions such as plotCI
+#library(gplots)                 # plotting functions such as plotCI
 library(rgdal)                  # gdal driver for R
 library(RColorBrewer)           # color scheme, palettes used for plotting
 library(gdata)                  # read different format (including .xlsx)
@@ -41,7 +41,7 @@ library(sphet)                  # spatial analyis, regression eg.contains spreg 
 library(forecast)               # arima and other time series methods
 library(lubridate)              # date and time handling tools
 library(parallel)               # access to parallelization functions
-library(hydrostats)
+#library(hydrostats)
 library(shiny)
 
 ###### Functions used in this script sourced from other files
@@ -85,7 +85,7 @@ read_select_station <- function(file_name,selected_val,selected_col){
    return(df)
 }
 
-run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
+run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T,out_suffix="",out_dir="."){
   #
   #
   #http://stackoverflow.com/questions/9923722/how-to-make-lm-display-in-its-output-a-formula-passed-to-it-as-a-variable
@@ -122,66 +122,50 @@ run_simple_lm <- function(df,y_var_name,x_var_name,log_val=T,plot_fig=T){
   no_obs <- nobs(mod)
   #nrow(mod) #same as nobs output
   
-  # Create the lm object ahead of time
-  #lm1 <- lm(Neff ~ Eeff, data = phuong)
-  
   # Create the character string that you want to print
   tp <- sprintf("%s=%.1f + %.2f %s", all.vars(formula(mod))[1],
                 coef(mod)[1], coef(mod)[2], all.vars(formula(mod))[2])
   
-  # Change the mypanel function to use the lm1 object
-  mypanel<-function(x,y,...){
-    panel.xyplot(x, y, ...)
-    panel.abline(mod)
-    panel.text("topleft",labels=tp)
-  }
-  #library(grid)
-  #mypanel <- function(...) {
-  #  panel.superpose(col=c("red","blue"),lwd=1.5,...)
-  #  grid.text(x=.5,y=.8,label=mytext[panel.number()]) 
-  #}
-  #library(grid)
-  #mypanel <- function(...) {
-  #  panel.superpose(col=c("black"),lwd=1.5,...)
-  #   grid.text(x=.5,y=.8,label=tp) 
-  #}
-  #xyplot(Neff~Eeff,data=phuong,panel=mypanel,
-  #       col="black",
-  #       pch=18,xlab="Energy efficiency (%)",
-  #       ylab = "Nitrogen efficiency (%)", main="(a)")
-  #only two data points for 2003!!!
   summary_mod_tb <- (summary(mod))
   tb_coefficients <- as.data.frame(summary_mod_tb$coefficients)
   names(tb_coefficients) <- c("estimate","std_error","t_value","p")
   #rownames(tb_coefficients)
   if(nrow(tb_coefficients)>1){
     coef_type_val <- c("intercept","slope")
-    p_intercept <- tb_coefficients$estimate[1]
-    p_slope <- tb_coefficients$estimate[2]
+    p_intercept <- tb_coefficients$p[1]
+    p_slope <- tb_coefficients$p[2]
     p_vals <- c(p_intercept,p_slope)
   }else{
     coef_type_val <- c("intercept")
-    p_intercept <- tb_coefficients$estimate[1]
+    p_intercept <- tb_coefficients$p[1]
     p_vals <- p_intercept
   }
   
   tb_coefficients$coef_type <- coef_type_val
-  #p_vals <- paste(format(tb_coefficients$p, digits=3),collpapse="")
-  p <- xyplot(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),
-              panel=mypanel,
+  tb_coefficients$n <- no_obs
+  rownames(tb_coefficients) <- NULL
+  p_vals <- paste(format(p_vals, digits=3),collpapse="")
+  plot_obj <- xyplot(log1p(df[[y_var_name]]) ~ log1p(df[[x_var_name]]),
               xlab=list(label=x_var_name, cex=1.2),
               ylab=list(label=y_var_name, cex=1.2),
-              auto.key=list(x=0.05,y=0.95,text=c(tp,p_vals),
-                            points=FALSE, lines=FALSE,col=c(1,1))
-              #auto.key=list(x=0.05,y=0.95,text=c("mean","5th and 95th percentiles"),
-              #              points=FALSE, lines=TRUE,col=c(1,2))
+              auto.key=list(x=0.05,y=0.95,text=c(tp,p_vals,no_obs),
+                            points=FALSE, lines=FALSE,col=c(1,1,1))
               )
-  #format(x, digits=4, nsmall=2)
-  #format(tb_coefficients$p, digits=3)
-  #plot(mod)
+  #format(tb, digits=3)
+  layout_m <- c(1.5,1)
+  if(plot_fig==T){
+    png_filename <- file.path(out_dir,paste("Figure","_","scatter_plot_regression",out_suffix,".png", sep=""))
+    png(png_filename,height=480*layout_m[2],width=480*layout_m[1])
+    print(plot_obj)
+    dev.off()
+  }
+
   #change name of rows and add n columns for the number of inputs in the model!
-  run_lm_obj <- list(tb_coefficients,mod,p,"n_obs")
+  run_lm_obj <- list(tb_coefficients,mod,plot_obj,no_obs)
   names(run_lm_obj) <- c("tb_coefficients","mod","plot","nobs")  
+  save(run_lm_obj,
+       file=file.path(out_dir,paste0("run_lm_obj_station_",data_type,"_",out_suffix,".RData")))
+  
   return(run_lm_obj)
 }
 
@@ -193,19 +177,22 @@ run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,
                    selected_val=selected_ID,
                    selected_col=selected_col,
                    mc.preschedule=FALSE,
-                   mc.cores = num_cores)
+                   mc.cores = 1)
   
   #test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
   df_combined <- do.call(rbind,l_df) 
-  write.table(df_combined,paste("df_combined_",selected_ID,out_suffix,sep=""),sep=",")
+  write.table(df_combined,paste("df_combined_station_",selected_ID,"_",out_suffix,".txt",sep=""),sep=",")
+  out_suffix_str <- paste(selected_ID,"_",out_suffix,sep="")
   
   if(nrow(df_combined)>0){
     #debug(run_simple_lm)
-    run_mod_obj <- run_simple_lm(df_combined,
+    run_mod_obj <- run_simple_lm(df=df_combined,
                                  y_var_name=y_var_name,
                                  x_var_name=x_var_name,
+                                 log_val=T,
                                  plot_fig=T,
-                                 log_val=T)
+                                 out_suffix=out_suffix_str,
+                                 out_dir=out_dir)
     
     
     #run_mod_obj$tb_coefficients
@@ -213,7 +200,8 @@ run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,
   }else{
     run_mod_obj <- NULL
   }
-  
+  save(run_mod_obj,
+       file=file.path(out_dir,paste0("run_mod_obj_station_",data_type,"_",out_suffix_str,".RData")))
   return(run_mod_obj)
 }
 
