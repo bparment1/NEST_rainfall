@@ -132,6 +132,8 @@ SMAZones_fname <- "SMAZoneDissolve.shp"
 dat_stat_location_DMR_fname <- "dat_stat_location_DMR.shp" #Use this for now
 dat_stat_location_MHB_fname <- "dat_stat_location_MHB.shp" #Use this for now
 
+transform_fun <- "log1p"
+
 ################# START SCRIPT ###############################
 
 #set up the working directory
@@ -180,8 +182,21 @@ x_var_name <- "rainfall"
 #
 #undebug(run_lm_by_station)
 #test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix,num_cores)
-  
+out_suffix_str <- paste0(data_type,"_",out_suffix)
 run_lm_obj <- lapply(list_ID[1:5],
+                     FUN=run_lm_by_station,
+                     selected_col=selected_col,
+                     x_var_name=x_var_name,
+                     y_var_name=y_var_name,
+                     lf=lf,
+                     log_val=T,
+                     out_dir=out_dir,
+                     out_suffix=out_suffix_str,
+                     num_cores=num_cores)
+
+#save(downloaded_obj,file= file.path(in_dir,paste("downloaded_prism_data_",var_name,".RData",sep="")))
+#started on 22:15
+run_lm_obj <- lapply(list_ID,
                      FUN=run_lm_by_station,
                      selected_col=selected_col,
                      x_var_name=x_var_name,
@@ -191,17 +206,8 @@ run_lm_obj <- lapply(list_ID[1:5],
                      out_dir=out_dir,
                      out_suffix=out_suffix,
                      num_cores=num_cores)
-
-#run_lm_obj <- lapply(list_ID,
-#                     FUN=run_lm_by_station,
-#                     selected_col=selected_col,
-#                     x_var_name=x_var_name,
-#                     y_var_name=y_var_name,
-#                    lf=lf,
-#                     log_val=T,
-#                    out_dir=out_dir,
-#                     out_suffix=out_suffix,
-#                     num_cores=num_cores)
+save(run_lm_obj,
+     file=file.path(out_dir,paste0("run_lm_obj_",data_type,"_",out_suffix,".RData")))
 
 ### TO DO CHANGE THE TRANSFORMATION TO LOG10 OR SOME OTHER!!!
 
@@ -220,6 +226,7 @@ list_ID_col_tmp <- unlist(lapply(1:length(l_tb_coef_NA),
 #adding tile id summary data.frame
 tb_coef_combined$ID_stat <- list_ID_col_tmp
 tb_coef_combined$data_type <- data_type
+tb_coef_combined$transform_fun <- transform_fun
 
 ########################### End of script #####################################
 
