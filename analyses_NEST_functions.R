@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/15/2016 
-#DATE MODIFIED: 06/22/2016
+#DATE MODIFIED: 06/23/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -186,13 +186,13 @@ run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,
   
   if(nrow(df_combined)>0){
     #debug(run_simple_lm)
-    run_mod_obj <- run_simple_lm(df=df_combined,
+    run_mod_obj <- try(run_simple_lm(df=df_combined,
                                  y_var_name=y_var_name,
                                  x_var_name=x_var_name,
                                  log_val=T,
                                  plot_fig=T,
                                  out_suffix=out_suffix_str,
-                                 out_dir=out_dir)
+                                 out_dir=out_dir))
     
     
     #run_mod_obj$tb_coefficients
