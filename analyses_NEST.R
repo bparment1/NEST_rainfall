@@ -47,11 +47,11 @@ library(plyr)                                # Various tools including rbind.fil
 ###### Functions used in this script sourced from other files
 
 #function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
-function_analyses_NEST <- "analyses_NEST_functions_06232016.R" #PARAM 1
+function_analyses_NEST <- "analyses_NEST_functions_06232016b.R" #PARAM 1
 
 #script_path <- "." #path to script #PARAM 
-script_path <- "/home/parmentier/Data/NEST/R_NEST"
-#script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
+#script_path <- "/home/parmentier/Data/NEST/R_NEST"
+script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s06/" #path to script #PARAM 
 #script_path <- "/home/benoit/data/NEST_stations_s06" #on SSI server
 #setwd(script_path)
@@ -69,8 +69,8 @@ source(file.path(script_path,function_analyses_NEST)) #source all functions used
 #in_dir <- "./NEST_stations_s05" #NCEAS, param 
 #in_dir <- "/home/benoit/data/NEST_stations_s06" #U. Maine SSI server, param 
 #in_dir <- "." #Use current directory, run locally
-in_dir <- "/home/parmentier/Data/NEST/NEST_stations_s08"
-#in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s08"
+#in_dir <- "/home/parmentier/Data/NEST/NEST_stations_s08"
+in_dir <- "/home/bparmentier/Google Drive/NEST/NEST_stations_s08"
 
 CRS_WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +towgs84=0,0,0" #Station coords WGS84 # CONST 2
 proj_str<- CRS_WGS84 #param 2
@@ -79,9 +79,8 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-#out_suffix <-"NEST_prism_03282016" #output suffix for the files and ouptu folder #PARAM 7
-#out_suffix <- paste0(as.Date(Sys.Date(),format="%Y%m%d"))
-out_suffix <- paste0("NEST_analyses_",format(Sys.Date(),"%Y%m%d"))
+out_suffix <-"NEST_prism_06232016b" #output suffix for the files and ouptu folder #PARAM 7
+#out_suffix <- paste0("NEST_analyses_",format(Sys.Date(),"%Y%m%d"))
 
 create_out_dir_param=T #PARAM8
 num_cores <- 11 #PARAM 9
@@ -102,7 +101,6 @@ station_measurements_DMR_data_fname <- list.files(path=file.path(in_dir,"data"),
 station_measurements_MHB_data_fname <- list.files(path=file.path(in_dir,"data"),
                                                   pattern="data_df_.*._NEST_prism_MHB.txt",
                                                   full.names=T) #PARAM 11 
-
 
 #data_df_2015_NEST_prism_MHB.txt
 start_date <- "2012-01-01" #PARAM 12,  this is the default value, use user define otherwise
@@ -158,10 +156,11 @@ if(create_out_dir_param==TRUE){
 dat_stat_location_MHB <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_stat_location_MHB_fname))
 dat_stat_location_DMR <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_stat_location_DMR_fname))
 
-data_type <- "DMR"
-list_ID <- unique(dat_stat_location_DMR$ID_stat)
+#data_type <- "DMR"
+data_type <- "MHB"
+list_ID <- unique(dat_stat_location_MHB$ID_stat)
 
-tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
+tb <- read.table(station_measurements_MHB_data_fname[10],sep=",")
 list_ID <- unique(tb$ID_stat)
 
 selected_ID <- list_ID[1]
