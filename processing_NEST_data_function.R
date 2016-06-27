@@ -4,7 +4,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 01/23/2016
+#DATE MODIFIED: 06/27/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -389,6 +389,33 @@ download_and_process_prism_data <- function(in_dir,out_dir,start_date,end_date,v
       lf_r <- list.files(pattern="*bil.bil$",path=out_dir_year,full.names = T)
       list_lf_r[[i]] <- lf_r
     }
+  }else{
+    #find where the data is
+    #
+    #start_date <- "2012-01-01" # param 3
+    #end_date <- "2012-12-31" # param 4
+    start_date <- as.Date(start_date,format="%Y-%m-%d") #start date
+    end_date <- as.Date(end_date,format="%Y-%m-%d") #end date
+    dates_range <- seq.Date(start_date, end_date, by="1 day") #sequence of dates
+    #dates_range_format <- as.Date(dates_range,format="%Y%m%d") #end date
+    
+    ##Check if the range is over multiple years
+    date_year <- strftime(dates_range, "%Y")
+    date_month <- strftime(dates_range , "%m") # current month of the date being processed
+    date_day <- strftime(dates_range , "%d")
+    #lf_r <- list.files(pattern="*bil.bil$",path=out_dir_year,full.names = T)
+    nb_year <- length(unique(date_year))
+    list_year <- unique(date_year)
+    list_lf_r <- vector("list",length=nb_year)
+    for(i in 1:nb_year){
+      
+      out_dir_year <- file.path(in_dir,paste("prism_",var_name,"_",list_year[i],sep=""))
+      lf_r <- list.files(pattern="*bil.bil$",path=out_dir_year,full.names = T)
+      #lf_r <- lapply(lf_zip[[i]], unzip,exdir= out_dir_year)
+      #lf_r <- list.files(pattern="*bil.bil$",path=out_dir_year,full.names = T)
+      list_lf_r[[i]] <- lf_r
+    }
+    
   }
   
   ########## PART 3: Match to study area ##############
