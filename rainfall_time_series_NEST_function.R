@@ -6,7 +6,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/09/2015 
-#DATE MODIFIED: 04/12/2016
+#DATE MODIFIED: 06/29/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -208,7 +208,7 @@ plotting_measurements_and_rainfall <- function(i,dates_val,df_ts_pix,data_var,li
     #var_pix_ts <- t(as.data.frame(subset(data_pixel,select=var_name)))
     #pix <- t(data_pixel[1,24:388])#can subset to range later
   }else{
-    var_pix <- as.data.frame(df_tmp)
+    var_pix <- as.data.frame(df_tmp) #select only dates and var_name!!!
   }
   #var_pix <- subset(as.data.frame(data_id_selected,c(var_name,"TRIP_START_DATE_f")])) #,select=var_name)
   
@@ -348,28 +348,61 @@ plotting_measurements_and_rainfall <- function(i,dates_val,df_ts_pix,data_var,li
   return(station_summary_obj)
 }
 
-combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix){
-  #data,convert_to_inches,in_dir_rst,start_date,end_date,data_type="MH",coord_names,out_dir,out_suffix
-  #data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,data_type,coord_names,out_dir,out_suffix  
+remove_from_list_fun <- function(l_x,condition_class ="try-error"){
+  index <- vector("list",length(l_x))
+  for (i in 1:length(l_x)){
+    if (inherits(l_x[[i]],condition_class)){
+      index[[i]] <- FALSE #remove from list
+    }else{
+      index[[i]] <- TRUE
+    }
+  }
+  l_x<-l_x[unlist(index)] #remove from list all elements using subset
+  
+  obj <- list(l_x,index)
+  names(obj) <- c("list","valid")
+  return(obj)
+}
+
+remove_df <- function(l_x,condition_val = val){
+  index <- vector("list",length(l_x))
+  for (i in 1:length(l_x)){
+    if(ncol(l_x[[i]]) !=condition_val){
+      index[[i]] <- FALSE #remove from list
+    }else{
+      index[[i]] <- TRUE
+    }
+  }
+  l_x<-l_x[unlist(index)] #remove from list all elements using subset
+  
+  obj <- list(l_x,index)
+  names(obj) <- c("list","valid")
+  return(obj)
+}
+
+combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,in_dir_rst,start_date,end_date,year_processed,data_type,coord_names,num_cores,out_dir,out_suffix){
   #
   ###Add documentation here...
-  #data
-  #dat_stat: unique station data
-  #convert_to_inches
-  #in_dir_rst
-  #start_date
-  #end_date
-  #data
-  #year_processed <- "2012" #PARAM 16
-  #threshold_val <- 2*25.4 #PARAM 17, in inches or mm
-  #units_val <- "mm"
-  #out_dir
-  #out_suffix
+  #Inputs
+  #1)data
+  #2)dat_stat: unique station data
+  #3)convert_to_inches
+  #4)in_dir_rst
+  #5)start_date
+  #6)end_date
+  #7)year_processed
+  #8)data_type
+  #9)coord_names
+  #10)num_cores
+  #11)out_dir
+  #12)out_suffix
+  #Outputs
+  #
+  #
+  #
   
   #### Start script ###
   
-  
-
   r_rainfall <- stack(mixedsort(list.files(pattern="*.tif",path=in_dir_rst,full.names=T))) #rainfall time series stack
   
   if (convert_to_inches==TRUE){
@@ -399,7 +432,8 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   df_ts_pix <- df_ts_pixel#this contains the pixels with extracted pixels
   #list_selected_pix <- 11:14
   year_processed <- year(start_date)
-  write.table(df_ts_pix,paste("df_ts_pix_",year_processed,"_",data_type,".txt",sep=""))
+  out_filename <- file.path(out_dir,paste("df_ts_pix_",year_processed,"_",data_type,".txt",sep=""))
+  write.table(df_ts_pix,out_filename)
   #test <- merge(dat_stat,data,by="FID")
   #data_merged <- merge(data,dat_stat,by="FID",all=T,suffixes=c("_x","_y"))
   #data_merged <- merge(data,dat_stat,by="i",all=T,suffixes=c("","_y"))
@@ -438,7 +472,7 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   
   
   #Takes 5mintues or less on bpy50 laptop
-  num_cores <- 4
+  #num_cores <- 4
   list_df_combined <- mclapply(1:length(list_selected_ID),FUN=plotting_measurements_and_rainfall,
                                df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,
                                var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F,
@@ -447,57 +481,44 @@ combine_stations_data_raster_ts_fun <- function(data,dat_stat,convert_to_inches,
   #                             df_ts_pix=df_ts_pix,data_var=data_merged,list_selected_ID=list_selected_ID,
   #                              var_name=var_name,r_ts_name=r_ts_name,dates_val,plot_fig=F,
   #                             mc.preschedule=FALSE,mc.cores= num_cores)
-  browser()
+  #browser()
   list_df_combined_tmp <- list_df_combined 
   list_df_combined <- remove_from_list_fun(list_df_combined)$list #remove data not predicted
   #Add report on how many stations were lost??? In this case 356  for year 2012
   #Find out more later...
   #If more than 4 columns it means there is an error that will need to be fixed!!
+  #Loose stations here from 1889 to 1847
   list_cleaning_df <- lapply(1:length(list_df_combined),FUN=function(i,x){x[[i]]$df_combined},x=list_df_combined)
+  #Should have four columns:
+  #[1] "rainfall"  "COL_SCORE" "date"      "ID_stat"  
   
   list_cleaning_df <- remove_df(list_cleaning_df,condition_val = 4)$list
 
      
-  save(list_df_combined,file= file.path(out_dir,paste("list_df_combined_obj",year_processed,"_",
+  save(list_cleaning_df,file= file.path(out_dir,paste("list_df_combined_obj",year_processed,"_",data_type,
                                                       out_suffix,".RData",sep="")))
-
+  #### Prepare object to return
+  #browser()
+  
   data_df <- do.call(rbind,list_cleaning_df)
-  write.table(data_df,file= file.path(out_dir,paste("data_df","_",year_processed,"_",data_type,
-                                                      out_suffix,".txt",sep="")),sep=",")
+  #formula_str <- paste("ID_stat"," ~ ",var_ID,sep="")
+  #var_pix <- aggregate(COL_SCORE ~ TRIP_START_DATE_f, data = df_tmp, mean) #aggregate by date
+  #data_stat_ID_match <- try(aggregate(as.formula(formula_str), data = data_merged, FUN=min)) #aggregate by date
+  #test <- merge(dat_stat,data_stat_ID_match,by="ID_stat")  
+  #dat_stat <- merge(dat_stat,data_stat_ID_match,by="ID_stat")
+  #browser()
+  data_df <- merge(data_df,dat_stat,by="ID_stat") #add x,y coordinates
+  data_df$data_type <- data_type
+  #data_df <- merge(data_df,data_merged[,c("ID_stat",var_ID)],by="ID_stat",all=T,suffixes=c("","_y"))
+  #test <- data_df
+  #test <-test[,c("ID_stat",var_ID,"rainfall",var_name,"date","data_type",coord_names[1],coord_names[2])]
+  
+  data_df <- data_df[,c("ID_stat",var_ID,"rainfall",var_name,"date","data_type",coord_names[1],coord_names[2])]
+  write.table(data_df,file= file.path(out_dir,paste("data_df_combined","_",year_processed,"_",data_type,
+                                                      ".txt",sep="")),sep=",")
   return(data_df)
 }
 
-remove_from_list_fun <- function(l_x,condition_class ="try-error"){
-  index <- vector("list",length(l_x))
-  for (i in 1:length(l_x)){
-    if (inherits(l_x[[i]],condition_class)){
-      index[[i]] <- FALSE #remove from list
-    }else{
-      index[[i]] <- TRUE
-    }
-  }
-  l_x<-l_x[unlist(index)] #remove from list all elements using subset
-  
-  obj <- list(l_x,index)
-  names(obj) <- c("list","valid")
-  return(obj)
-}
-
-remove_df <- function(l_x,condition_val = val){
-  index <- vector("list",length(l_x))
-  for (i in 1:length(l_x)){
-    if(ncol(l_x[[i]]) !=condition_val){
-      index[[i]] <- FALSE #remove from list
-    }else{
-      index[[i]] <- TRUE
-    }
-  }
-  l_x<-l_x[unlist(index)] #remove from list all elements using subset
-  
-  obj <- list(l_x,index)
-  names(obj) <- c("list","valid")
-  return(obj)
-}
 
 
 ########################### End of script #####################################
