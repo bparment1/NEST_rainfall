@@ -1,16 +1,19 @@
 ##############################################  NEST Beach closure project  #######################################
 ###########################################  Figures and Analyses production  #######################################
-#This script explores the correlation between rainfall events and beach closures due to bacteria outbreaks in Maine.
-#The script uses time series analyes from R. 
-
+#This script prepares data for analyes of rainfall events and beach closures due to bacteria outbreaks 
+#in Maine. There are two datasets provided containing information on bacteria measurements:
+#DMR:
+#MHB:
+#The rainfall data is currently obtained from PRISM.
+#
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 04/12/2016
-#Version: 4
+#DATE MODIFIED: 06/29/2016
+#Version: 5
 #PROJECT: NEST beach closures            
-
 #
-#COMMENTS: - The script does not use bacteria data at the current time.  
+#
+#COMMENTS: 
 #          - Add spacetime object functions for later
 #          - Add datatype in name
 #TO DO:
@@ -18,6 +21,19 @@
 # - Compute accumulated rain over several days using time series functions
 # - Make a movie sequence later on using animation package in R
 #
+
+###Stages:
+#Stage 1: downloading_NEST_data_01232016.R
+#Stage 1: processing_NEST_data_06272016.R
+#Stage 1: processing_NEST_data_function_06272016.R
+#Stage 2: rainfall_time_series_NEST_06292016.R
+#Stage 2: rainfall_time_series_NEST_function_06292016.R
+#Stage 3: Visualization and exploration Shiny: UI_04262016.R
+#Stage 3: Visualization and exploration Shiny: global_04262016.R
+#Stage 3: Visualization and exploration Shiny: server_04262016.R
+#Stage 4: Analyses: analyses_NEST_06232016b.R
+#Stage 4: Analyses: analyses_NEST_functions_06232016b.R
+
 #################################################################################################
 
 ###Loading R library and packages                                                      
@@ -47,7 +63,7 @@ library(hydrostats)
 
 ###### Functions used in this script sourced from other files
 
-function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_04122016b.R" #PARAM 1
+function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_06292016.R" #PARAM 1
 script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
 #script_path <- "/home/parmentier/Data/rainfall/NEST"
 source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
@@ -88,21 +104,21 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_04102016" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_06292016" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=TRUE #PARAM8
 num_cores <- 4 #PARAM 9
 
 rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
-station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11
+station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11,DMR
 #station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST/", "MHB_data_2006-2015.csv") #PARAM 11
 
 years_to_process <- 2003:2016
 #start_date <- "2012-01-01" #PARAM 12
 #end_date <- "2012-12-31" #PARAM 13 #should process by year!!!
-var_name <- "COL_SCORE" #PARAM 14, DMR data
+var_name <- "COL_SCORE" #PARAM 14, Name of variable of interest: bacteria measurement (DMR data)
 #var_name_raster <- rainfall
 #var_name <- "CONCENTRATION" #PARAM 14, MHB data
-var_ID <- "LOCATION_ID" #PARAM 15
+var_ID <- "LOCATION_ID" #PARAM 15 #this is for DMR data
 #var_ID <- NULL #PARAM 15 if null then create a new ID for stations!!, not null for DMR
 year_processed <- "2012" #PARAM 16
 threshold_val <- 2*25.4 #PARAM 17, in inches or mm
@@ -112,6 +128,8 @@ units_val <- "mm" #PARAM 19
 data_type <- "DMR" #for Maine Department of Marine Resources #PARAM 20
 x_coord_range <- c(-180,180) #PARAM 21
 y_coord_range <- c(-90,90) #PARM 22
+ref_raster_name <- NULL#
+## Add ref_raster_name ,if not null use that for the coordinates limit of the study area
 
 #coord_names <- c("SITE.LONGITUDE..UTM.","SITE.LATITUDE..UTM.") #MHB, beach bacteria dataset
 coord_names <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #DMR, cloroforms beach bacteria dataset #PARAM 23
@@ -153,8 +171,10 @@ data$FID <- 1:nrow(data)
 data[[var_name]] <- as.numeric(data[[var_name]]) #make sure we have a numeric field
 data[[coord_names[1]]] <- as.numeric(data[[coord_names[1]]])
 data[[coord_names[2]]] <- as.numeric(data[[coord_names[2]]])
+#Screen for coordinates that are out of the range!!
 index_x <- data[[coord_names[1]]] < x_coord_range[1]
 data[[coord_names[1]]][index_x] <- NA 
+#Screen for coordinates that are out of the range!!
 index_x <- data[[coord_names[2]]] > x_coord_range[2]
 data[[coord_names[2]]][index_x] <- NA 
 index_y <- data[[coord_names[2]]] < y_coord_range[1]
@@ -165,6 +185,7 @@ data[[coord_names[2]]][index_y] <- NA
 #> dim(data)
 #[1] 106262     36
 
+##Now remove all the NA in coordinates (data were set NA because out of range or already NA)
 data <- subset(data, !is.na(data[[coord_names[1]]]) & !is.na(data[[coord_names[2]]]))
 
 #> dim(data)
@@ -172,6 +193,7 @@ data <- subset(data, !is.na(data[[coord_names[1]]]) & !is.na(data[[coord_names[2
 
 #### Now check that dates are available for all records!!
 
+#MHB data from Maine Healthy Beaches
 if(data_type=="MHB"){
   dates_TRIP_START <- unlist(lapply(strsplit(data$SAMPLE.DATE," "),function(x){x[1][1]}))
   #dates_TRIP_START <- gsub(" 0:00:00","",data$SAMPLE.DATE)
@@ -181,6 +203,7 @@ if(data_type=="MHB"){
   data$TRIP_START_DATE_month <- strftime(data$TRIP_START_DATE_f , "%m") # current month of the date being processed
   data$TRIP_START_DATE_day <- strftime(data$TRIP_START_DATE_f , "%d")
 }
+#DMR data from Deparment of Marine Resources
 if(data_type=="DMR"){
   dates_TRIP_START <- gsub(" 0:00:00","",data$TRIP_START_DATE)
   data$TRIP_START_DATE_f <- as.Date(strptime(dates_TRIP_START,"%m/%d/%Y"))
@@ -191,14 +214,36 @@ if(data_type=="DMR"){
 
 data$TRIP_START_DATE_f <- paste0(data$TRIP_START_DATE_year,data$TRIP_START_DATE_month,data$TRIP_START_DATE_day)
 data$TRIP_START_DATE_f <- as.Date(strptime(data$TRIP_START_DATE_f,"%Y%m%d"))
+
+##### Now remove data that have no dates in the measurements!
 ##for DMR removing 7 rows
 data <- subset(data, !is.na(data[["TRIP_START_DATE_f"]]) )
 
 #> dim(data)
 #[1] 83180    41
 
+#### FIRST SCREEN BASED ON THE ID
+
+if(data_type=="DMR"){
+  #remove items that do not follow "EA007.00" i.e. 8 characters
+  
+  index_ID <- (nchar(data[[var_ID]]) != 8)
+  #index_y <- data[[coord_names[2]]] > y_coord_range[2]
+  #test <- data
+  #test[[var_ID]][index_ID] <- NA 
+  data[[var_ID]][index_ID] <- NA 
+  #index_y <- data[[coord_names[2]]] > y_coord_range[2]
+  #data[[coord_names[2]]][index_y] <- NA 
+  ##Now remove all the NA in coordinates (data were set NA because out of range or already NA)
+  data <- subset(data, !is.na(data[[var_ID]]))
+  #> dim(data)
+  #[1] 83170    42
+}
+
+### SECOND SCREEEN BASED ON COORDINATES
+
 ## Remove duplicates rows from stations to identify uniques sations
-##Create unique identifier from coordinates
+##Create unique identifier from coordinates first
 
 data$id_coord <- paste(data[[coord_names[1]]],data[[coord_names[2]]],sep="_")
 
@@ -209,7 +254,17 @@ data <- merge(data,dat_ID,by="id_coord",all=T,suffixes=c("","_y"))
 #data_merged <- merge(data,dat_stat,by="FID",all=T,suffixes=c("","_y"))
 coords <- data[,coord_names]
 coordinates(data) <- coords  
+
+##Create a unique set of items based on location only
 dat_stat <- remove.duplicates(data[,c("ID_stat","id_coord",coord_names[[1]],coord_names[[2]])])
+#> dim(dat_stat)
+#[1] 2245    4
+#> length(unique(dat_stat$ID_stat))
+#[1] 2245
+#> length(unique(data$LOCATION_ID))
+#[1] 2238
+#> length(unique(data$ID_stat))
+#[1] 2238
 
 if(data_type=="MHB"){
   proj_str <- "+proj=utm +zone=19 +ellps=GRS80 +datum=NAD83 +units=m +no_defs" #This will need to be added in the parameters
@@ -234,6 +289,7 @@ if(data_type=="DMR"){
 #53380     33798      3888     33054     33376     28368     41740     42606     52930     58534     60984 
 #There are some issues with the station identifier. FIx this later, use ID_stat as the identifier 
 #for processing for now.
+
 if(is.null(var_ID)){
   dat_stat$LOCATION_ID <- dat_stat$ID_stat
   var_ID <- "LOCATION_ID"
@@ -244,7 +300,6 @@ if(is.null(var_ID)){
 
 #xtabs(data$ID_stat,data$LOCATION_ID)
 #xtabs(data$ID_stat ~data$LOCATION_ID,data)
-
 ### Write out basic informaiotn before processing by years
 
 write.table(as.data.frame(dat_stat),file=file.path(out_dir,paste0("dat_stat_location_",data_type,".txt")),sep=",")
