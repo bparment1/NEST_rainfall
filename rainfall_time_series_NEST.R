@@ -8,7 +8,7 @@
 #
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 06/29/2016
+#DATE MODIFIED: 06/30/2016
 #Version: 5
 #PROJECT: NEST beach closures            
 #
@@ -112,7 +112,8 @@ rainfall_dir <- "/home/bparmentier/Google Drive/NEST_Data" #PARAM 10
 station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ_TECS_Q.txt") #PARAM 11,DMR
 #station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST/", "MHB_data_2006-2015.csv") #PARAM 11
 
-years_to_process <- 2003:2016
+#years_to_process <- 2003:2016
+years_to_process <- 2012:2012
 #start_date <- "2012-01-01" #PARAM 12
 #end_date <- "2012-12-31" #PARAM 13 #should process by year!!!
 var_name <- "COL_SCORE" #PARAM 14, Name of variable of interest: bacteria measurement (DMR data)
@@ -257,6 +258,16 @@ coordinates(data) <- coords
 
 ##Create a unique set of items based on location only
 dat_stat <- remove.duplicates(data[,c("ID_stat","id_coord",coord_names[[1]],coord_names[[2]])])
+
+if(is.null(var_ID)){
+  dat_stat$LOCATION_ID <- dat_stat$ID_stat
+  var_ID <- "LOCATION_ID"
+}else{
+  formula_str <- as.formula(paste0("ID_stat ~ ", var_ID))
+  data_tmp <- aggregate(formula_str , data = data, FUN="min")
+  dat_stat[[var_ID]] <- data_tmp[[var_ID]]
+}
+
 #> dim(dat_stat)
 #[1] 2245    4
 #> length(unique(dat_stat$ID_stat))
@@ -290,10 +301,11 @@ if(data_type=="DMR"){
 #There are some issues with the station identifier. FIx this later, use ID_stat as the identifier 
 #for processing for now.
 
-if(is.null(var_ID)){
-  dat_stat$LOCATION_ID <- dat_stat$ID_stat
-  var_ID <- "LOCATION_ID"
-}#else{
+
+#}else{
+#  dat_stat$LOCATION_ID <- dat_stat$ID_stat
+#}
+
 #  test <- merge(dat_stat,data,by="id_coord",all=T,suffixes=c("","_y"))
 #}
 #crosstab(Survey, row.vars = "Age", col.vars = "Sex", type = "f")
@@ -328,6 +340,7 @@ for(i in 1:length(years_to_process)){
     
 }
 #For DMR data, it took 1h43 minutes...
+barplot(table(df_combined$COL_SCORE),main=year_processed)
 
 ###########################
 #### Part 3: combine all data together
