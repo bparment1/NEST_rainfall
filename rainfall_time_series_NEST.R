@@ -8,7 +8,7 @@
 #
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 11/05/2015 
-#DATE MODIFIED: 06/30/2016
+#DATE MODIFIED: 07/03/2016
 #Version: 5
 #PROJECT: NEST beach closures            
 #
@@ -104,7 +104,7 @@ CRS_reg <- CRS_WGS84 # PARAM 3
 file_format <- ".rst" #PARAM 4
 NA_value <- -9999 #PARAM5
 NA_flag_val <- NA_value #PARAM6
-out_suffix <-"NEST_prism_06292016" #output suffix for the files and ouptu folder #PARAM 7
+out_suffix <-"NEST_prism_07032016" #output suffix for the files and ouptu folder #PARAM 7
 create_out_dir_param=TRUE #PARAM8
 num_cores <- 4 #PARAM 9
 
@@ -113,7 +113,7 @@ station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST_Data/", "WQ
 #station_data_fname <- file.path("/home/bparmentier/Google Drive/NEST/", "MHB_data_2006-2015.csv") #PARAM 11
 
 #years_to_process <- 2003:2016
-years_to_process <- 2012:2012
+years_to_process <- 2014:2015
 #start_date <- "2012-01-01" #PARAM 12
 #end_date <- "2012-12-31" #PARAM 13 #should process by year!!!
 var_name <- "COL_SCORE" #PARAM 14, Name of variable of interest: bacteria measurement (DMR data)
