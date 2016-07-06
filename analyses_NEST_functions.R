@@ -1,4 +1,3 @@
-
 ##############################################  NEST Beach closure project  #######################################
 #################################  Analyses for exploration of station measurements  #######################################
 #This contains functions used to explore the correlation between rainfall events and beach closures due to bacteria outbreaks in Maine.
@@ -6,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/15/2016 
-#DATE MODIFIED: 06/23/2016
+#DATE MODIFIED: 07/06/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -178,7 +177,10 @@ run_lm_by_station <- function(selected_ID,selected_col,x_var_name,y_var_name,lf,
                    selected_col=selected_col,
                    mc.preschedule=FALSE,
                    mc.cores = 1)
-  
+  #debug(read_select_station)
+  #l_df <-read_select_station(lf[1],
+  #                 selected_val=selected_ID,
+  #                 selected_col=selected_col)
   #test_mod <- run_simple_lm(test[[10]],y_var_name,x_var_name,log_val=T)
   df_combined <- do.call(rbind,l_df) 
   write.table(df_combined,paste("df_combined_station_",selected_ID,"_",out_suffix,".txt",sep=""),sep=",")
