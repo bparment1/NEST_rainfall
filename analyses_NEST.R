@@ -5,12 +5,12 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/14/2016 
-#DATE MODIFIED: 07/06/2016
+#DATE MODIFIED: 07/07/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
 #
-#COMMENTS: - Fixing problem with extent of input stations data 
+#COMMENTS: - Adding figure option and title of station in plot  
 
 #
 #TO DO:
@@ -47,7 +47,7 @@ library(plyr)                                # Various tools including rbind.fil
 ###### Functions used in this script sourced from other files
 
 #function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_03272016.R" #PARAM 1
-function_analyses_NEST <- "analyses_NEST_functions_07062016.R" #PARAM 1
+function_analyses_NEST <- "analyses_NEST_functions_07072016.R" #PARAM 1
 
 #script_path <- "." #path to script #PARAM 
 script_path <- "/home/parmentier/Data/NEST/R_NEST"
@@ -144,6 +144,7 @@ dat_stat_location_DMR_fname <- "dat_stat_location_DMR.shp" #Use this for now
 dat_stat_location_MHB_fname <- "dat_stat_location_MHB.shp" #Use this for now
 
 transform_fun <- "log1p"
+plot_fig <- F #if false no figures are created
 
 ################# START SCRIPT ###############################
 
@@ -199,67 +200,35 @@ x_var_name <- "rainfall"
 #undebug(run_lm_by_station)
 #test <- run_lm_by_station(selected_ID,selected_col,x_var_name,y_var_name,lf,log_val=T,out_dir,out_suffix,num_cores)
 out_suffix_str <- paste0(data_type,"_",out_suffix)
-# run_lm_obj <- lapply(list_ID[1:11],
-#                      FUN=run_lm_by_station,
-#                      selected_col=selected_col,
-#                      x_var_name=x_var_name,
-#                      y_var_name=y_var_name,
-#                      lf=lf,
-#                      log_val=T,
-#                      out_dir=out_dir,
-#                      out_suffix=out_suffix_str,
-#                      num_cores=num_cores)
-
-#save(downloaded_obj,file= file.path(in_dir,paste("downloaded_prism_data_",var_name,".RData",sep="")))
 #started on 8:09
-# run_lm_obj <- mclapply(list_ID[1:11],
-#                      FUN=run_lm_by_station,
-#                      selected_col=selected_col,
-#                      x_var_name=x_var_name,
-#                      y_var_name=y_var_name,
-#                      lf=lf,
-#                      log_val=T,
-#                      out_dir=out_dir,
-#                      out_suffix=out_suffix,
-#                      num_cores=1,
-#                      mc.preschedule=FALSE,
-#                      mc.cores = num_cores)
 
-# run_lm_obj <- mclapply(list_ID[1:11],
-#                      FUN=run_lm_by_station,
-#                      selected_col=selected_col,
-#                      x_var_name=x_var_name,
-#                      y_var_name=y_var_name,
-#                      lf=lf,
-#                      log_val=T,
-#                      out_dir=out_dir,
-#                      out_suffix=out_suffix,
-#                      num_cores=1,
-#                      mc.preschedule=FALSE,
-#                      mc.cores = num_cores)
-#19h10
 #debug(run_lm_by_station)
 #test <- run_lm_by_station(list_ID[1],                     
-#                     selected_col=selected_col,
+#                    selected_col=selected_col,
 #                     x_var_name=x_var_name,
 #                     y_var_name=y_var_name,
 #                     lf=lf,
-#                     log_val=T,
+#                      plot_fig=plot_fig,
+#                    log_val=T,
 #                     out_dir=out_dir,
 #                     out_suffix=out_suffix,
 #                     num_cores=1)
-run_lm_obj <- mclapply(list_ID[1:11],
-                     FUN=run_lm_by_station,
-                     selected_col=selected_col,
-                     x_var_name=x_var_name,
-                     y_var_name=y_var_name,
-                     lf=lf,
-                     log_val=T,
-                     out_dir=out_dir,
-                     out_suffix=out_suffix,
-                     num_cores=1,
-                     mc.preschedule=FALSE,
-                     mc.cores = num_cores)
+
+#transform_fun <- "log1p" #this will need to be switched for log_val
+# run_lm_obj <- mclapply(list_ID[1:11],
+#                      FUN=run_lm_by_station,
+#                      selected_col=selected_col,
+#                      x_var_name=x_var_name,
+#                      y_var_name=y_var_name,
+#                      lf=lf,
+#                      plot_fig=plot_fig,
+#                      log_val=T,
+#                      out_dir=out_dir,
+#                      out_suffix=out_suffix,
+#                      num_cores=1,
+#                      mc.preschedule=FALSE,
+#                      mc.cores = num_cores)
+
 run_lm_obj <- mclapply(list_ID,
                      FUN=run_lm_by_station,
                      selected_col=selected_col,
@@ -311,11 +280,12 @@ write.table(tb_coef_combined,paste("tb_coef_combined_station_",out_suffix,".txt"
 #out_suffix_str <- paste(selected_ID,"_",out_suffix,sep="")
 
 ##
-tb_slope <- subset(tb_coef_combined,coef_type="slope",select())
+#tb_slope <- subset(tb_coef_combined,coef_type="slope",select())
 tb_slope <- tb_coef_combined[tb_coef_combined$coef_type=="slope",]
 
 histogram(tb_slope$p)
 histogram(tb_slope$n)
+histogram(tb_slope$estimate)
 
 ########################### End of script #####################################
 
