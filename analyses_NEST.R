@@ -5,7 +5,7 @@
 
 #AUTHORS: Benoit Parmentier                                             
 #DATE CREATED: 06/14/2016 
-#DATE MODIFIED: 07/07/2016
+#DATE MODIFIED: 07/09/2016
 #Version: 1
 #PROJECT: NEST beach closures            
 
@@ -139,9 +139,11 @@ coord_names_DMR <- c("LONGITUDE_DECIMAL","LATITUDE_DECIMAL") #cloroforms beach b
 
 SMAZones_fname <- "SMAZoneDissolve.shp"
 
-dat_stat_location_DMR_fname <- "dat_stat_location_DMR.shp" #Use this for now
+#dat_stat_location_DMR_fname <- "dat_stat_location_DMR.shp" #Use this for now
+dat_stat_location_DMR_fname <- "dat_stat_location_DMR.txt" 
 #dat_stat_location_DMR.shp
-dat_stat_location_MHB_fname <- "dat_stat_location_MHB.shp" #Use this for now
+#dat_stat_location_MHB_fname <- "dat_stat_location_MHB.shp" #Use this for now
+dat_stat_location_MHB_fname <- "dat_MHB_location_DMR.txt" 
 
 transform_fun <- "log1p"
 plot_fig <- F #if false no figures are created
@@ -168,11 +170,19 @@ if(create_out_dir_param==TRUE){
 #data_df_DMR
 #dat_stat_location_MHB <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_stat_location_MHB_fname))
 #dat_stat_location_DMR <- readOGR(file.path(in_dir,"/data"),sub(".shp","",dat_stat_location_DMR_fname))
-dat_stat_location_MHB <- readOGR(in_dir,sub(".shp","",dat_stat_location_MHB_fname))
-dat_stat_location_DMR <- readOGR(in_dir,sub(".shp","",dat_stat_location_DMR_fname))
+#dat_stat_location_MHB <- readOGR(in_dir,sub(".shp","",dat_stat_location_MHB_fname))
+#dat_stat_location_DMR <- readOGR(in_dir,sub(".shp","",dat_stat_location_DMR_fname))
 
-data_type <- "DMR"
-list_ID <- unique(dat_stat_location_DMR$ID_stat)
+#dat_stat_location_MHB <- readOGR(in_dir,sub(".shp","",dat_stat_location_MHB_fname))
+#dat_stat_location_DMR <- readOGR(in_dir,sub(".shp","",dat_stat_location_DMR_fname))
+
+dat_stat_location_DMR <- read.table(file.path(in_dir,dat_stat_location_DMR_fname),sep=",")
+coordinates(dat_stat_location_DMR) <- dat_stat_location_DMR[,coord_names_DMR]
+proj4string(dat_stat_location_DMR) <- CRS_WGS84
+#dat_stat_location_DMR <- readOGR(in_dir,sub(".shp","",dat_stat_location_DMR_fname))
+
+list_ID_tmp <- unique(dat_stat_location_DMR$ID_stat)
+list_ID_tmp <- unique(as.character(dat_stat_location_DMR[[var_ID]]))
 
 tb <- read.table(station_measurements_DMR_data_fname[10],sep=",")
 #list_ID <- unique(tb$ID_stat)
@@ -249,8 +259,12 @@ save(run_lm_obj,
 ### TO DO CHANGE THE TRANSFORMATION TO LOG10 OR SOME OTHER!!!
 
 run_lm_obj[[10]]$plot
-run_lm_obj[[7]]$tb_coefficients
-run_lm_obj[[7]]
+run_lm_obj[[10]]$tb_coefficients
+run_lm_obj[[10]]
+
+run_lm_obj[[11]]$plot
+run_lm_obj[[11]]$tb_coefficients
+run_lm_obj[[11]]
 
 #l_tb_coef <- try(lapply(run_lm_obj,FUN=function(x){x[["tb_coefficients"]]}))
 #test <- mclapply(run_lm_obj[1701:1711],
@@ -275,17 +289,51 @@ tb_coef_combined$ID_stat <- list_ID_col_tmp
 tb_coef_combined$data_type <- data_type
 tb_coef_combined$transform_fun <- transform_fun
 
-#df_combined <- do.call(rbind,l_df) 
-write.table(tb_coef_combined,paste("tb_coef_combined_station_",out_suffix,".txt",sep=""),sep=",")
+
+##test<- merge(tb_coef_combined,dat_stat_location_DMR,by.x=c("ID_stat"),by.y=var_ID,all=T,suffixes=c("","_y"))
+#> dim(test)
+#[1] 3789   17
+pos_col <- match("ID_stat",names(dat_stat_location_DMR))
+
+df_coef_combined<- merge(tb_coef_combined,dat_stat_location_DMR[,-pos_col],by.x=c("ID_stat"),by.y=var_ID,suffixes=c("_x","_y"))
+#> dim(test2)
+#[1] 3203   17
+
+write.table(tb_coef_combined,paste("df_coef_combined_station_",out_suffix,".txt",sep=""),sep=",")
 #out_suffix_str <- paste(selected_ID,"_",out_suffix,sep="")
 
 ##
 #tb_slope <- subset(tb_coef_combined,coef_type="slope",select())
-tb_slope <- tb_coef_combined[tb_coef_combined$coef_type=="slope",]
+tb_slope <- df_coef_combined[df_coef_combined$coef_type=="slope",]
 
 histogram(tb_slope$p)
+tb_slope$p_005 <- as.numeric(tb_slope$p <= 0.05)
+tb_slope$p_001 <- as.numeric(tb_slope$p <= 0.01)
+histogram(tb_slope$p_001,main="p <= 0.01")
+histogram(tb_slope$p_005,main="p <= 0.05")
+sum(tb_slope$p_001,na.rm=T)
+sum(tb_slope$p_005,na.rm=T)
+length(tb_slope$p_005)
+sum(is.na(tb_slope$p))
+
+table(tb_slope$p_005)
+
 histogram(tb_slope$n)
+mean(tb_slope$n)
+range(tb_slope$n)
+breaks_val <- seq(-1000,1000,by=100)
+range_val <- range(tb_slope$estimate)
+
+breaks_val <- c(range_val[1],breaks_val,range_val[2])
 histogram(tb_slope$estimate)
+histogram(tb_slope$estimate,breaks=breaks_val)
+#histogram(tb_slope$estimate,xlim=c(-1000,1000))
+#hist(tb_slope$estimate,breaks=breaks_val)
+
+hist(tb_slope$estimate, xlim=c(-1000,1000),breaks=breaks_val)
+barplot(table(tb_slope$estimate))
+max(tb_slope$estimate)
+min(tb_slope$estimate)
 
 ########################### End of script #####################################
 
